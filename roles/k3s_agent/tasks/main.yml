@@ -9,5 +9,6 @@
     --kubelet-arg="fail-swap-on=false"
   args:
     creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
-  environment:
-    # INSTALL_K3S_VERSION: "v1.28.x+k3s1"
+  # If you want a specific version, uncomment and set:
+  # environment:
+  #   INSTALL_K3S_VERSION: "v1.28.x+k3s1"

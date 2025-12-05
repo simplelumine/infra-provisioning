@@ -1,4 +1,5 @@
 inventory/hosts.ini
+inventory/bootstrap.ini
 inventory/group_vars/all/secrets.yml
 *.retry
 *.log

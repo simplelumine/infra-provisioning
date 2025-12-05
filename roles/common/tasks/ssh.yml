@@ -16,6 +16,7 @@
     - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
     - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
     - { regexp: '^#?UsePAM', line: 'UsePAM yes' } # Fail2Ban needs PAM
+    - { regexp: '^Include /etc/ssh/sshd_config.d/\*.conf', line: '#Include /etc/ssh/sshd_config.d/*.conf' }
   notify: Restart SSH
 
 - name: Ensure Fail2Ban is running

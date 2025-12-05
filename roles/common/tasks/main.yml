@@ -1,9 +1,6 @@
 ---
 # Main entry point for the common role
 
-- import_tasks: users.yml
-  tags: [common, users]
-
 - import_tasks: ssh.yml
   tags: [common, ssh]
 

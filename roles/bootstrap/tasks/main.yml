@@ -1,0 +1,49 @@
+---
+# 1. Ensure Python/Bash/Sudo exist (Pre-requisite for Ansible)
+- name: Install minimal dependencies
+  raw: apt-get update && apt-get install -y python3 python3-pip bash sudo curl
+  changed_when: false
+
+# 2. Create Admin User (BEFORE System Update)
+- name: Ensure admin user exists
+  user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    shell: /bin/bash
+    append: true
+    create_home: true
+
+- name: Set authorized key for admin user
+  authorized_key:
+    user: "{{ admin_user }}"
+    state: present
+    # WSL Path to Windows User .ssh folder
+    key: "{{ lookup('file', '/mnt/c/Users/' + admin_user + '/.ssh/id_ed25519_' + admin_user + '.pub') }}"
+
+- name: Allow passwordless sudo for admin user
+  lineinfile:
+    path: /etc/sudoers.d/{{ admin_user }}
+    line: '{{ admin_user }} ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    create: true
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# 3. System Update (Force Overwrite Configs)
+- name: Update all packages (Force ConfOld)
+  apt:
+    upgrade: dist
+    update_cache: true
+    dpkg_options: 'force-confdef,force-confold'
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+# 4. Reboot to apply Kernel updates
+- name: Reboot server
+  reboot:
+    msg: "Rebooting after bootstrap"
+    connect_timeout: 5
+    reboot_timeout: 600
+    pre_reboot_delay: 0
+    post_reboot_delay: 30
+    test_command: whoami
