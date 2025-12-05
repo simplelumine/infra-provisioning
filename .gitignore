@@ -1,6 +1,7 @@
 inventory/hosts.ini
 inventory/bootstrap.ini
 inventory/group_vars/all/secrets.yml
+inventory/group_vars/all/vars.yml
 *.retry
 *.log
 .DS_Store
