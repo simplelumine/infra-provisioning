@@ -1,0 +1,25 @@
+---
+- name: Install Fail2Ban
+  apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+
+- name: Harden SSH configuration
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    validate: 'sshd -t -f %s'
+  loop:
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin prohibit-password' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+    - { regexp: '^#?UsePAM', line: 'UsePAM yes' } # Fail2Ban needs PAM
+  notify: Restart SSH
+
+- name: Ensure Fail2Ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: true

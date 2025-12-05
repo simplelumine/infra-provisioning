@@ -1,0 +1,17 @@
+---
+# Main entry point for the common role
+
+- import_tasks: users.yml
+  tags: [common, users]
+
+- import_tasks: ssh.yml
+  tags: [common, ssh]
+
+- import_tasks: system.yml
+  tags: [common, system]
+
+- import_tasks: networking.yml
+  tags: [common, net]
+
+- import_tasks: firewall.yml
+  tags: [common, firewall]

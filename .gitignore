@@ -1,0 +1,7 @@
+inventory/hosts.ini
+inventory/group_vars/all/secrets.yml
+*.retry
+*.log
+.DS_Store
+.idea/
+.vscode/

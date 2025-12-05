@@ -1,0 +1,25 @@
+---
+- name: Create Xray directory
+  file:
+    path: /usr/local/etc/xray
+    state: directory
+    mode: '0755'
+
+- name: Install Xray
+  shell: |
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+  args:
+    creates: /usr/local/bin/xray
+
+- name: Configure Xray
+  template:
+    src: xray_config.json.j2
+    dest: /usr/local/etc/xray/config.json
+    mode: '0644'
+  notify: Restart Xray
+
+- name: Ensure Xray is running
+  service:
+    name: xray
+    state: started
+    enabled: true

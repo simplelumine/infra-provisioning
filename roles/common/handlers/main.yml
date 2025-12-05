@@ -1,0 +1,10 @@
+---
+- name: Restart SSH
+  service:
+    name: ssh
+    state: restarted
+
+- name: Reload Firewall
+  service:
+    name: netfilter-persistent
+    state: reloaded

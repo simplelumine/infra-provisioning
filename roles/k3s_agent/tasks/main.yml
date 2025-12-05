@@ -1,0 +1,13 @@
+---
+- name: Install K3s Agent
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - agent \
+    --server https://{{ hostvars[k3s_master_host]['ansible_host'] }}:6443 \
+    --token {{ hostvars[k3s_master_host]['k3s_token'] }} \
+    --node-external-ip {{ ansible_host }} \
+    --flannel-backend=none \
+    --kubelet-arg="fail-swap-on=false"
+  args:
+    creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+  environment:
+    # INSTALL_K3S_VERSION: "v1.28.x+k3s1"

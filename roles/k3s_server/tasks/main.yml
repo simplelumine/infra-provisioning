@@ -1,0 +1,32 @@
+---
+- name: Install K3s (Control Plane)
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - server \
+    --node-external-ip {{ ansible_host }} \
+    --flannel-backend=none \
+    --disable-network-policy \
+    --disable=traefik \
+    --disable=servicelb \
+    --disable=metrics-server \
+    --kubelet-arg="fail-swap-on=false" \
+    --tls-san {{ ansible_host }} \
+    --tls-san {{ inventory_hostname }}
+  args:
+    creates: /var/lib/rancher/k3s/server/node-token
+  environment:
+    # If you want a specific version, set INSTALL_K3S_VERSION
+    # INSTALL_K3S_VERSION: "v1.28.x+k3s1"
+
+- name: Retrieve K3s Node Token
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: node_token_base64
+
+- name: Register K3s Token as Fact
+  set_fact:
+    k3s_token: "{{ node_token_base64.content | b64decode | trim }}"
+
+- name: Store Token globally (dummy host)
+  add_host:
+    name: "K3S_TOKEN_HOLDER"
+    token: "{{ node_token_base64.content | b64decode | trim }}"

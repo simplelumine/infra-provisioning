@@ -1,0 +1,45 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# 1. Allow established connections
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+# 2. Allow local loopback
+-A INPUT -i lo -j ACCEPT
+
+# 3. Allow ICMP (Ping)
+-A INPUT -p icmp -j ACCEPT
+
+# 4. Allow SSH (Port 22 normally, change if needed)
+-A INPUT -p tcp --dport 22 -j ACCEPT
+
+# 5. Allow Tailscale Interface (Assume interface pattern 'tailscale+')
+-A INPUT -i tailscale+ -j ACCEPT
+
+# 6. Allow all traffic from other Cluster Nodes (Public IPs)
+{% for host in groups['all'] %}
+{% if hostvars[host]['ansible_host'] is defined and host != inventory_hostname %}
+-A INPUT -s {{ hostvars[host]['ansible_host'] }} -j ACCEPT
+{% endif %}
+{% endfor %}
+
+# 7. Allow WireGuard (Cilium Encryption) fallback
+-A INPUT -p udp --dport 51871 -j ACCEPT
+
+# 8. Allow VXLAN (Cilium Overlay) fallback
+-A INPUT -p udp --dport 8472 -j ACCEPT
+
+# 9. Allow Cilium Health Check fallback
+-A INPUT -p tcp --dport 4240 -j ACCEPT
+
+# 10. Allow Kube API from Tailscale Subnet (For Admin access)
+-A INPUT -s 100.64.0.0/10 -p tcp --dport 6443 -j ACCEPT
+
+# 11. Allow Xray (Edge Nodes Only)
+{% if 'edge_nodes' in group_names %}
+-A INPUT -p tcp --dport 10000 -j ACCEPT
+{% endif %}
+
+COMMIT

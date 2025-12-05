@@ -1,0 +1,19 @@
+---
+- name: Install iptables-persistent
+  apt:
+    name: 
+      - iptables-persistent
+      - netfilter-persistent
+    state: present
+
+- name: Deploy iptables rules
+  template:
+    src: rules.v4.j2
+    dest: /etc/iptables/rules.v4
+  notify: Reload Firewall
+
+- name: Enable netfilter-persistent
+  service:
+    name: netfilter-persistent
+    state: started
+    enabled: true
