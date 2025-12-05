@@ -42,26 +42,36 @@ infra-provisioning/
 **User**: `root` (Password Auth).
 
 1.  Edit `inventory/bootstrap.ini` with your server IPs and Root passwords.
+    > **Note**: For internal nodes behind a bastion, ensure you add `ansible_ssh_common_args='-o ProxyJump=simplelumine@<bastion_ip>'` so the bootstrapper can reach them.
 2.  Run the bootstrap playbook:
     ```bash
     ansible-playbook bootstrap.yml -i inventory/bootstrap.ini
     ```
 3.  **Result**:
     - System Updated (Force Config).
-    - User `simplelumine` created.
+    - System Updated (Force Config).
+    - Admin User created (defined in `vars.yml`).
     - SSH Key injected.
     - Server Rebooted.
 
 ### Phase 2: Main Provisioning (The "User" Phase)
 
 **Goal**: Deploy applications and Security Hardening.
-**User**: `simplelumine` (Key Auth).
+**User**: `{{ admin_user }}` (Key Auth).
 
-1.  **Verify Access**: Try `ssh simplelumine@<ip>`.
+1.  **Verify Access**: Try `ssh <admin_user>@<ip>`.
 2.  **Run Main Playbook**:
+
+    > **Tip**: It is recommended to configure the Bastion/Jump Host first to ensure connectivity for other nodes.
+
     ```bash
+    # 1. Run Bastion first
+    ansible-playbook site.yml --limit prod-lax-eg1
+
+    # 2. Run everything else
     ansible-playbook site.yml
     ```
+
 3.  **What Happens**:
     - **Common Role**: Disables Root Login, Disables Password Auth, Removes Vendor SSH Includes, Enables Swap.
     - **Apps**: Installs K3s, Cilium, etc.
