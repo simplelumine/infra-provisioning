@@ -28,4 +28,3 @@
     tailscale up --authkey={{ tailscale_auth_key }}
   register: tailscale_up
   changed_when: "'Success' in tailscale_up.stdout or 'Logged in' in tailscale_up.stdout"
-

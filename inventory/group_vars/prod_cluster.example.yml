@@ -1,0 +1,4 @@
+---
+peer_group: prod_cluster
+k3s_master_host: prod_cluster_host
+tailscale_auth_key: "tskey-auth-PROD-REPLACE_ME"

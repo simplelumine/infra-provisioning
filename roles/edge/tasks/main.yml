@@ -1,4 +1,7 @@
 ---
 - import_tasks: init_os.yml
+- import_tasks: networking.yml
+- import_tasks: tailscale.yml
 - import_tasks: firewall.yml
+
 - import_tasks: xray.yml

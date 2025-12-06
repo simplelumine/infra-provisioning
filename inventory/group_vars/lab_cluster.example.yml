@@ -1,0 +1,4 @@
+---
+peer_group: lab_cluster
+k3s_master_host: lab_cluster_host
+tailscale_auth_key: "tskey-auth-LAB-REPLACE_ME"

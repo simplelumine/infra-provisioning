@@ -1,0 +1,10 @@
+---
+tailscale_auth_key: "tskey-auth-EDGE-REPLACE_ME"
+
+xray_port_tcp: port_tcp
+
+xray_clients:
+  - id: "uuid-placeholder-1"
+    name: "user1"
+
+xray_private_key: "private-key-placeholder"
