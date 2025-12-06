@@ -19,20 +19,24 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 
 ```text
 infra-provisioning/
+├── docs/                      # Architectural Decisions & Session Notes
 ├── inventory/
-│   ├── hosts.ini                  # Real Inventory (Host definitions ONLY)
-│   ├── hosts.example.ini          # Template Inventory
+│   ├── hosts.ini              # Real Inventory (Host definitions ONLY)
+│   ├── hosts.example.ini      # Template Inventory
 │   └── group_vars/
-│       ├── prod_cluster.yml       # (Private) Prod Keys & Vars
-│       ├── lab_cluster.yml        # (Private) Lab Keys & Vars
-│       └── edge_nodes.yml         # (Private) Edge Keys & Xray Vars
+│       ├── prod_cluster.yml   # (Private) Prod Keys & Vars
+│       ├── lab_cluster.yml    # (Private) Lab Keys & Vars
+│       └── edge_nodes.yml     # (Private) Edge Keys & Xray Vars
 ├── roles/
-│   ├── bootstrap/                 # "Day 0" Root Initialization
-│   ├── control/                   # Control Plane (K3s Server, Cilium, Tailscale)
-│   ├── worker/                    # Worker Node (K3s Agent, Firewall)
-│   └── edge/                      # Edge Node (Xray, Tailscale, Firewall)
-├── bootstrap.yml                  # Phase 1: Root Initialization
-└── site.yml                       # Phase 2: Main Provisioning
+│   ├── bootstrap/             # "Day 0" Root Initialization (Split Tasks)
+│   │   ├── tasks/             # logical steps: init, update, user, ssh, reboot
+│   │   ├── templates/         # sshd_config.j2
+│   │   └── handlers/          # service restart handlers
+│   ├── control/               # Control Plane (K3s Server, Cilium, Tailscale)
+│   ├── worker/                # Worker Node (K3s Agent, Firewall)
+│   └── edge/                  # Edge Node (Xray, Tailscale, Firewall)
+├── bootstrap.yml              # Phase 1: Root Initialization
+└── site.yml                   # Phase 2: Main Provisioning
 ```
 
 ## 🚀 Getting Started (WSL Recommended)
@@ -60,13 +64,27 @@ Before running any playbooks, you must create the real configuration files from 
 
 ### Phase 1: Bootstrap (The "Root" Phase)
 
-**Goal**: Take a fresh server, update it, create the admin user, and install keys.
-**User**: `root` (Password Auth).
+**Goal**: Transform a fresh cloud server into a secure, standardized base.
+**User**: `root` (Password Auth initially).
+
+**Key Actions**:
+- **System Reset**: Forces `apt upgrade` to replace all vendor configs with standard maintainer versions (`force-confnew`).
+- **Security Hardening**: Replaces `sshd_config` with our secure template (Key-Only Auth).
+- **User Setup**: Creates the admin user with passwordless Sudo.
+
+**Steps**:
 
 1.  Edit `inventory/bootstrap.ini` with your server IPs and Root passwords.
 2.  Run the bootstrap playbook:
     ```bash
+    # Bootstrap a single server
+    ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit <server_ip>
+
+    # Run the entire bootstrap (updates everything)
     ansible-playbook bootstrap.yml -i inventory/bootstrap.ini
+
+    # Or limit to specific groups
+    ansible-playbook bootstrap.yml --limit prod_cluster
     ```
 
 ---
@@ -78,8 +96,10 @@ Before running any playbooks, you must create the real configuration files from 
 
 1.  **Verify Access**: Try `ssh <admin_user>@<ip>`.
 2.  **Run Main Playbook**:
-
     ```bash
+    # Main Provisioning a single server
+    ansible-playbook site.yml -i inventory/bootstrap.ini --limit <server_ip>
+
     # Run the entire site (updates everything)
     ansible-playbook site.yml
 
