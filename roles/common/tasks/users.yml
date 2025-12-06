@@ -1,3 +1,0 @@
----
-# User creation is now handled by the bootstrap role
-# This file is kept for compatibility but tasks are no-op if user exists

@@ -1,11 +1,11 @@
 ---
-
 - name: Fetch K3s Token from Master
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
   delegate_to: "{{ k3s_master_host }}"
   register: k3s_token_slurp
   become: true
+  # Logic: k3s_master_host needs to be defined in inventory or group_vars
 
 - name: Install K3s Agent
   shell: |
@@ -17,6 +17,3 @@
     --kubelet-arg="fail-swap-on=false"
   args:
     creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
-  # If you want a specific version, uncomment and set:
-  # environment:
-  #   INSTALL_K3S_VERSION: "v1.28.x+k3s1"

@@ -7,34 +7,24 @@
   become: true
   gather_facts: true
   roles:
-    - common
     - edge
 
 # =============================================================================
-# 2. KUBERNETES NODES (Common Setup)
-# =============================================================================
-- name: Configure Kubernetes Nodes (Common)
-  hosts: k3s_cluster:lab_cluster
-  become: true
-  gather_facts: true
-  roles:
-    - common
-
-# =============================================================================
-# 3. CONTROL PLANE (Install K3s Server & Cilium)
+# 2. CONTROL PLANE (Install K3s Server & Cilium)
 # =============================================================================
 - name: Configure Control Plane
   hosts: prod_control_plane:lab_control_plane
   become: true
+  gather_facts: true
   roles:
-    - k3s_server
-    - cilium
+    - control
 
 # =============================================================================
-# 4. WORKER NODES (Join Cluster)
+# 3. WORKER NODES (Join Cluster)
 # =============================================================================
 - name: Configure Worker Nodes
   hosts: prod_worker_nodes:lab_worker_nodes
   become: true
+  gather_facts: true
   roles:
-    - k3s_agent
+    - worker

@@ -6,8 +6,3 @@
 
 - name: Reload Firewall
   shell: netfilter-persistent reload
-
-- name: Restart Xray
-  service:
-    name: xray
-    state: restarted

@@ -13,9 +13,6 @@
     --tls-san {{ inventory_hostname }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
-  # environment:
-    # If you want a specific version, set INSTALL_K3S_VERSION
-    # INSTALL_K3S_VERSION: "v1.28.x+k3s1"
 
 - name: Retrieve K3s Node Token
   slurp:

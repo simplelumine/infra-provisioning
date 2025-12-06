@@ -25,9 +25,9 @@
         type: wireguard
       hubble:
         relay:
-          enabled: true
+          enabled: false
         ui:
-          enabled: true
+          enabled: false
     dest: /tmp/cilium-values.yaml
 
 - name: Install Cilium via Helm CLI

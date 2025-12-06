@@ -1,9 +1,34 @@
 ---
-- name: Install Fail2Ban
+- name: Set hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: ".*{{ item }}$"
+    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+    state: present
+  when: hostvars[item]['ansible_host'] is defined
+  loop: "{{ groups['all'] }}"
+
+- name: Install system dependencies
   apt:
-    name: fail2ban
+    name:
+      - curl
+      - gnupg
+      - ca-certificates
+      - htop
+      - systemd-timesyncd
+      - fail2ban
     state: present
     update_cache: true
+
+- name: Enable NTP (systemd-timesyncd)
+  service:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
 
 - name: Harden SSH configuration
   lineinfile:

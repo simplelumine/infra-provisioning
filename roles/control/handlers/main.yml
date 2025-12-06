@@ -5,6 +5,4 @@
     state: restarted
 
 - name: Reload Firewall
-  service:
-    name: netfilter-persistent
-    state: reloaded
+  shell: netfilter-persistent reload
