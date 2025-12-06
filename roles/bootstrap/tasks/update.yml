@@ -1,0 +1,8 @@
+---
+- name: Update all packages (Force ConfNew)
+  apt:
+    upgrade: dist
+    update_cache: true
+    dpkg_options: 'force-confdef,force-confnew'
+  environment:
+    DEBIAN_FRONTEND: noninteractive

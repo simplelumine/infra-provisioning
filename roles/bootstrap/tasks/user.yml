@@ -1,0 +1,23 @@
+---
+- name: Ensure admin user exists
+  user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    shell: /bin/bash
+    append: true
+    create_home: true
+
+- name: Set authorized key for admin user
+  authorized_key:
+    user: "{{ admin_user }}"
+    state: present
+    key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+
+- name: Allow passwordless sudo for admin user
+  lineinfile:
+    path: /etc/sudoers.d/{{ admin_user }}
+    line: '{{ admin_user }} ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    create: true
+    mode: '0440'
+    validate: 'visudo -cf %s'
