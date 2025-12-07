@@ -1,4 +1,3 @@
 ---
 - import_tasks: networking.yml
-- import_tasks: firewall.yml
 - import_tasks: k3s-agent.yml

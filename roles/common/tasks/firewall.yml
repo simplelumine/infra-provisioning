@@ -6,7 +6,7 @@
       - netfilter-persistent
     state: present
 
-- name: Deploy iptables rules (Control Plane)
+- name: Deploy iptables rules (Centralized)
   template:
     src: rules.v4.j2
     dest: /etc/iptables/rules.v4
