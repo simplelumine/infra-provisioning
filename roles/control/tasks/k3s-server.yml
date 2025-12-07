@@ -1,10 +1,11 @@
 ---
 - name: Install K3s (Control Plane)
   shell: |
-    curl -sfL https://get.k3s.io | sh -s - server \
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=none \
     --disable-network-policy \
+    --disable-kube-proxy \
     --disable=traefik \
     --disable=servicelb \
     --disable=metrics-server \
@@ -27,3 +28,23 @@
   add_host:
     name: "K3S_TOKEN_HOLDER"
     token: "{{ node_token_base64.content | b64decode | trim }}"
+
+- name: Retrieve K3s Kubeconfig
+  slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_kubeconfig_base64
+
+- name: Create local .kube directory
+  delegate_to: localhost
+  file:
+    path: "{{ playbook_dir }}/../.kube"
+    state: directory
+    mode: '0755'
+
+- name: Save Kubeconfig locally
+  delegate_to: localhost
+  copy:
+    content: "{{ k3s_kubeconfig_base64.content | b64decode }}"
+    dest: "{{ playbook_dir }}/../.kube/{{ inventory_hostname }}-config"
+    mode: '0600'
+
