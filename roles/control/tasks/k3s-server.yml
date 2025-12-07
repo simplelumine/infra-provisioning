@@ -1,7 +1,59 @@
 ---
-- name: Install K3s (Control Plane)
+- name: Identify Primary Control Node (Prod)
+  set_fact:
+    primary_control_node: "{{ groups['prod_control_plane'][0] }}"
+  when: "'prod_control_plane' in group_names"
+
+- name: Identify Primary Control Node (Lab)
+  set_fact:
+    primary_control_node: "{{ groups['lab_control_plane'][0] }}"
+  when: "'lab_control_plane' in group_names"
+
+- name: Debug Primary Node
+  debug:
+    msg: "Primary Control Node is {{ primary_control_node }}"
+
+- name: Install K3s on Primary Node (Leader)
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
+    --node-external-ip {{ ansible_host }} \
+    --cluster-init \
+    --flannel-backend=none \
+    --disable-network-policy \
+    --disable-kube-proxy \
+    --disable=traefik \
+    --disable=servicelb \
+    --disable=metrics-server \
+    --kubelet-arg="fail-swap-on=false" \
+    --tls-san {{ ansible_host }} \
+    --tls-san {{ inventory_hostname }}
+  args:
+    creates: /var/lib/rancher/k3s/server/node-token
+  when: inventory_hostname == primary_control_node
+
+- name: Retrieve K3s Token from Primary
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: primary_token_raw
+  when: inventory_hostname == primary_control_node
+
+- name: Set Token Fact (All Nodes)
+  set_fact:
+    k3s_token: "{{ hostvars[primary_control_node]['primary_token_raw'].content | b64decode | trim }}"
+
+- name: Wait for Primary K3s API to be ready
+  wait_for:
+    host: "{{ hostvars[primary_control_node]['ansible_host'] }}"
+    port: 6443
+    delay: 5
+    timeout: 300
+  when: inventory_hostname != primary_control_node
+
+- name: Install K3s on Secondary Nodes (Followers)
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
+    --server https://{{ hostvars[primary_control_node]['ansible_host'] }}:6443 \
+    --token {{ k3s_token }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=none \
     --disable-network-policy \
@@ -14,15 +66,9 @@
     --tls-san {{ inventory_hostname }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
+  when: inventory_hostname != primary_control_node
 
-- name: Retrieve K3s Node Token
-  slurp:
-    src: /var/lib/rancher/k3s/server/node-token
-  register: node_token_base64
 
-- name: Register K3s Token as Fact
-  set_fact:
-    k3s_token: "{{ node_token_base64.content | b64decode | trim }}"
 
 - name: Store Token globally (dummy host)
   add_host:
