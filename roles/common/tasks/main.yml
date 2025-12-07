@@ -5,4 +5,5 @@
 - import_tasks: fail2ban.yml
 - import_tasks: sshd.yml
 - import_tasks: swap.yml
+- import_tasks: tailscale.yml
 - import_tasks: firewall.yml

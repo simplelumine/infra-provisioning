@@ -1,8 +1,0 @@
----
-- name: Restart SSH
-  service:
-    name: ssh
-    state: restarted
-
-- name: Reload Firewall
-  shell: netfilter-persistent reload

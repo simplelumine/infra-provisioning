@@ -1,7 +1,4 @@
 ---
-# =============================================================================
-# 0. COMMON CONFIGURATION (All Nodes)
-# =============================================================================
 - name: Apply Base Configuration (Common)
   hosts: all
   become: true
@@ -9,9 +6,6 @@
   roles:
     - common
 
-# =============================================================================
-# 1. EDGE NODES (Standalone Bastions/Proxies)
-# =============================================================================
 - name: Configure Edge Nodes
   hosts: edge_nodes
   become: true
@@ -19,9 +13,6 @@
   roles:
     - edge
 
-# =============================================================================
-# 2. CONTROL PLANE (Install K3s Server & Cilium)
-# =============================================================================
 - name: Configure Control Plane
   hosts: prod_control_plane:lab_control_plane
   become: true
@@ -29,9 +20,6 @@
   roles:
     - control
 
-# =============================================================================
-# 3. WORKER NODES (Join Cluster)
-# =============================================================================
 - name: Configure Worker Nodes
   hosts: prod_worker_nodes:lab_worker_nodes
   become: true

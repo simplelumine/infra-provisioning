@@ -1,16 +1,20 @@
 ---
-- name: Fetch K3s Token from Master
+- name: Check if Leader Host is Defined
+  fail:
+    msg: "k3s_leader_host variable must be defined in group_vars"
+  when: k3s_leader_host is not defined
+
+- name: Fetch K3s Token from Leader
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
-  delegate_to: "{{ k3s_master_host }}"
+  delegate_to: "{{ k3s_leader_host }}"
   register: k3s_token_slurp
   become: true
-  # Logic: k3s_master_host needs to be defined in inventory or group_vars
 
 - name: Install K3s Agent
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - agent \
-    --server https://{{ hostvars[k3s_master_host]['ansible_host'] }}:6443 \
+    --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 \
     --token {{ k3s_token_slurp.content | b64decode | trim }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=none \

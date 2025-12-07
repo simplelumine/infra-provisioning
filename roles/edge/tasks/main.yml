@@ -1,6 +1,2 @@
 ---
-- import_tasks: swap.yml
-
-- import_tasks: tailscale.yml
-
 - import_tasks: xray.yml

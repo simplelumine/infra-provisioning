@@ -1,17 +1,8 @@
 ---
-- name: Identify Primary Control Node (Prod)
-  set_fact:
-    primary_control_node: "{{ groups['prod_control_plane'][0] }}"
-  when: "'prod_control_plane' in group_names"
-
-- name: Identify Primary Control Node (Lab)
-  set_fact:
-    primary_control_node: "{{ groups['lab_control_plane'][0] }}"
-  when: "'lab_control_plane' in group_names"
-
-- name: Debug Primary Node
-  debug:
-    msg: "Primary Control Node is {{ primary_control_node }}"
+- name: Check if Leader Host is Defined
+  fail:
+    msg: "k3s_leader_host variable must be defined in group_vars"
+  when: k3s_leader_host is not defined
 
 - name: Install K3s on Primary Node (Leader)
   shell: |
@@ -29,30 +20,31 @@
     --tls-san {{ inventory_hostname }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
-  when: inventory_hostname == primary_control_node
+  when: inventory_hostname == k3s_leader_host
 
-- name: Retrieve K3s Token from Primary
+- name: Retrieve K3s Token from Leader
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
-  register: primary_token_raw
-  when: inventory_hostname == primary_control_node
+  register: leader_token_raw
+  delegate_to: "{{ k3s_leader_host }}"
+  run_once: true
 
-- name: Set Token Fact (All Nodes)
+- name: Set Token Fact
   set_fact:
-    k3s_token: "{{ hostvars[primary_control_node]['primary_token_raw'].content | b64decode | trim }}"
+    k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
 
-- name: Wait for Primary K3s API to be ready
+- name: Wait for Leader K3s API to be ready
   wait_for:
-    host: "{{ hostvars[primary_control_node]['ansible_host'] }}"
+    host: "{{ hostvars[k3s_leader_host]['ansible_host'] }}"
     port: 6443
     delay: 5
     timeout: 300
-  when: inventory_hostname != primary_control_node
+  when: inventory_hostname != k3s_leader_host
 
 - name: Install K3s on Secondary Nodes (Followers)
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
-    --server https://{{ hostvars[primary_control_node]['ansible_host'] }}:6443 \
+    --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 \
     --token {{ k3s_token }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=none \
@@ -66,31 +58,34 @@
     --tls-san {{ inventory_hostname }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
-  when: inventory_hostname != primary_control_node
+  when: inventory_hostname != k3s_leader_host
 
-
-
-- name: Store Token globally (dummy host)
-  add_host:
-    name: "K3S_TOKEN_HOLDER"
-    token: "{{ node_token_base64.content | b64decode | trim }}"
-
-- name: Retrieve K3s Kubeconfig
+- name: Retrieve K3s Kubeconfig (Leader Only)
   slurp:
     src: /etc/rancher/k3s/k3s.yaml
   register: k3s_kubeconfig_base64
+  when: inventory_hostname == k3s_leader_host
+
+- name: Get Tailscale IP from Leader
+  command: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+  when: inventory_hostname == k3s_leader_host
 
 - name: Create local .kube directory
   delegate_to: localhost
+  become: false
   file:
     path: "{{ playbook_dir }}/../.kube"
     state: directory
     mode: '0755'
+  run_once: true
 
 - name: Save Kubeconfig locally
   delegate_to: localhost
+  become: false
   copy:
-    content: "{{ k3s_kubeconfig_base64.content | b64decode }}"
-    dest: "{{ playbook_dir }}/../.kube/{{ inventory_hostname }}-config"
+    content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', tailscale_ip_output.stdout | trim) }}"
+    dest: "{{ playbook_dir }}/../.kube/{{ k3s_leader_host }}-config"
     mode: '0600'
-
+  when: inventory_hostname == k3s_leader_host

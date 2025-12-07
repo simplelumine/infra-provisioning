@@ -1,5 +1,4 @@
-
-- import_tasks: networking.yml
-- import_tasks: tailscale.yml
-- import_tasks: k3s-server.yml
+---
+- import_tasks: k8s-prereqs.yml
+- import_tasks: k3s-control.yml
 - import_tasks: cilium.yml
