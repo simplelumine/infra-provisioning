@@ -1,2 +1,6 @@
 ---
 admin_user: your_admin_user
+
+# K3s Version Pinning
+# Check https://github.com/k3s-io/k3s/releases for latest stable
+k3s_install_version: "v1.34.2+k3s1"

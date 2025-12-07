@@ -1,21 +1,23 @@
 ---
-- name: Add Tailscale GPG key
-  shell: |
-    curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-  args:
-    creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
-
-- name: Add Tailscale Repo
-  shell: |
-    curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
-  args:
-    creates: /etc/apt/sources.list.d/tailscale.list
-
+# Install Tailscale using official install script (auto-detects distro)
 - name: Install Tailscale
-  apt:
-    name: tailscale
+  shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+  args:
+    creates: /usr/bin/tailscale
+
+# Enable IP forwarding for Exit Node / Subnet Router functionality
+- name: Enable IPv4 and IPv6 forwarding for Tailscale
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-tailscale.conf
+    sysctl_set: true
     state: present
-    update_cache: true
+    reload: true
+  loop:
+    - { name: 'net.ipv4.ip_forward', value: '1' }
+    - { name: 'net.ipv6.conf.all.forwarding', value: '1' }
 
 - name: Enable Tailscale service
   service:
@@ -23,9 +25,27 @@
     state: started
     enabled: true
 
+# Check current Tailscale status before attempting authentication
+- name: Check Tailscale Status
+  command: tailscale status --json
+  register: ts_status
+  failed_when: false
+  changed_when: false
+
+# Only authenticate if not already connected
 - name: Authenticate Tailscale
-  shell: |
-    tailscale up --authkey={{ tailscale_auth_key }}
+  command: tailscale up --authkey={{ tailscale_auth_key }}
+  when: >
+    tailscale_auth_key is defined and
+    tailscale_auth_key | length > 0 and
+    (ts_status.rc != 0 or
+     (ts_status.stdout | from_json).BackendState != 'Running')
   register: tailscale_up
-  changed_when: "'Success' in tailscale_up.stdout or 'Logged in' in tailscale_up.stdout"
-  ignore_errors: true
+  changed_when: tailscale_up.rc == 0
+
+# Advertise as Exit Node
+- name: Advertise as Exit Node
+  command: tailscale set --advertise-exit-node
+  register: exit_node_result
+  changed_when: exit_node_result.rc == 0
+  failed_when: false
