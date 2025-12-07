@@ -6,14 +6,16 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 
 - **Orchestration**: Ansible
 - **Kubernetes Distro**: [k3s](https://k3s.io/) (Lightweight, Single Binary)
+  - **HA Mode**: Etcd (Embedded)
+  - **Verification**: Deterministic Leader Logic (`k3s_leader_host`)
 - **CNI & Network Security**: [Cilium](https://cilium.io/)
   - **Encryption**: WireGuard (Transparent Node-to-Node encryption)
   - **Overlay**: VXLAN
-  - **KubeProxy**: Replaced by Cilium (eBPF)
-  - **Hubble**: Disabled by default (managed via GitOps)
-- **Networking**: [Tailscale](https://tailscale.com/) (Mesh VPN for Management & Overlay)
+- **Management Plane**: [Tailscale](https://tailscale.com/) (Global Mesh)
+  - **Zero Trust**: All nodes (Control, Worker, Edge) join the mesh.
+  - **Security**: OS Firewall allows `tailscale0`; traffic control is enforced via **Tailscale ACLs**.
 - **Operating System**: Debian 11/12 (Bullseye/Bookworm)
-- **Edge/Transit**: Standalone Xray (VLESS-Reality) proxies acting as Cluster Gateways.
+- **Edge/Transit**: Standalone Xray (VLESS-Reality) proxies.
 
 ## 📂 Repository Structure
 
@@ -21,29 +23,24 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 infra-provisioning/
 ├── docs/                      # Architectural Decisions & Session Notes
 ├── inventory/
-│   ├── hosts.ini              # Real Inventory (Host definitions ONLY)
+│   ├── hosts.ini              # Single Consolidated Inventory
 │   ├── hosts.example.ini      # Template Inventory
 │   └── group_vars/
-│       ├── prod_cluster.yml   # (Private) Prod Keys & Vars
-│       ├── lab_cluster.yml    # (Private) Lab Keys & Vars
-│       └── edge_nodes.yml     # (Private) Edge Keys & Xray Vars
+│       ├── prod_cluster.yml   # Global Cluster Config (Leader, Tailscale Key)
+│       ├── lab_cluster.yml    # Lab Cluster Config
+│       └── edge_nodes.yml     # Edge Config
 ├── roles/
-│   ├── bootstrap/             # "Day 0" Root Initialization (Split Tasks)
-│   │   ├── tasks/             # logical steps: init, update, user, ssh, reboot
-│   │   ├── templates/         # sshd_config.j2
-│   │   └── handlers/          # service restart handlers
-│   ├── control/               # Control Plane (K3s Server, Cilium, Tailscale)
-│   ├── worker/                # Worker Node (K3s Agent, Firewall)
-│   └── edge/                  # Edge Node (Xray, Tailscale, Firewall)
+│   ├── common/                # Shared Tasks (Tailscale, Firewall, SSH, Swap)
+│   ├── control/               # Control Plane (K3s Server, Cilium)
+│   ├── worker/                # Worker Node (K3s Agent)
+│   └── edge/                  # Edge Node (Xray)
 ├── bootstrap.yml              # Phase 1: Root Initialization
 └── site.yml                   # Phase 2: Main Provisioning
 ```
 
 ## 🚀 Getting Started (WSL Recommended)
 
-### Prerequisites (Configuration)
-
-Before running any playbooks, you must create the real configuration files from the examples. These files are git-ignored to protect your secrets.
+### Prerequisites
 
 1.  **Copy the Example Files**:
 
@@ -54,65 +51,36 @@ Before running any playbooks, you must create the real configuration files from 
     cp edge_nodes.example.yml edge_nodes.yml
     ```
 
-2.  **Fill in the Secrets**:
-    - Edit `prod_cluster.yml` / `lab_cluster.yml` / `edge_nodes.yml`.
-    - **Tailscale Auth Key**: Generate keys in Tailscale Console -> Settings -> Keys.
-      - Recommend using **Tags** (`tag:prod`, `tag:lab`, `tag:edge`) when generating keys for automatic ACLs.
-    - **Xray UUID/Keys**: Fill in for Edge nodes.
+2.  **Define the Leader**:
+    - In `prod_cluster.yml`, ensure `k3s_leader_host` matches a hostname in `hosts.ini`.
+    - This creates a **Deterministic** installation source (Token/Kubeconfig fetch source).
 
----
+### Phase 1: Bootstrap (Root)
 
-### Phase 1: Bootstrap (The "Root" Phase)
+**Goal**: System Reset, SSH Hardening, User Creation.
 
-**Goal**: Transform a fresh cloud server into a secure, standardized base.
-**User**: `root` (Password Auth initially).
+```bash
+# Update everything
+ansible-playbook bootstrap.yml -i inventory/bootstrap.ini
+```
 
-**Key Actions**:
-- **System Reset**: Forces `apt upgrade` to replace all vendor configs with standard maintainer versions (`force-confnew`).
-- **Security Hardening**: Replaces `sshd_config` with our secure template (Key-Only Auth).
-- **User Setup**: Creates the admin user with passwordless Sudo.
+### Phase 2: Main Provisioning (User)
 
-**Steps**:
+**Goal**: Install Tailscale (Global), K3s (Cluster), and Xray (Edge).
 
-1.  Edit `inventory/bootstrap.ini` with your server IPs and Root passwords.
-2.  Run the bootstrap playbook:
-    ```bash
-    # Bootstrap a single server
-    ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit <server_ip>
+```bash
+# Provision everything
+ansible-playbook site.yml
 
-    # Run the entire bootstrap (updates everything)
-    ansible-playbook bootstrap.yml -i inventory/bootstrap.ini
-
-    # Or limit to specific groups
-    ansible-playbook bootstrap.yml --limit prod_cluster
-    ```
-
----
-
-### Phase 2: Main Provisioning (The "User" Phase)
-
-**Goal**: Deploy applications, Install K3s/Tailscale, and Apply Security Hardening.
-**User**: `{{ admin_user }}` (Key Auth).
-
-1.  **Verify Access**: Try `ssh <admin_user>@<ip>`.
-2.  **Run Main Playbook**:
-    ```bash
-    # Main Provisioning a single server
-    ansible-playbook site.yml -i inventory/bootstrap.ini --limit <server_ip>
-
-    # Run the entire site (updates everything)
-    ansible-playbook site.yml
-
-    # Or limit to specific groups
-    ansible-playbook site.yml --limit prod_cluster
-    ansible-playbook site.yml --limit edge_nodes
-    ```
+# Provision specific group
+ansible-playbook site.yml --limit prod_cluster
+```
 
 ## 🛡 Security Strategy
 
-- **Tailscale Authentication**: Uses Auth Keys stored in `group_vars`. No interactive login required.
-- **Firewall (UFW/Iptables)**:
-  - **Control**: Allows only Tailscale and Cluster Peers (Strict).
-  - **Worker**: Allows Public Web (80/443), NodePorts (30000+), and Cluster Peers.
-  - **Edge**: Allows Public Web (80/443).
-- **GitOps Ready**: Cilium Hubble UI/Relay are disabled by default so Flux can manage them.
+- **Global Tailscale**: Every node is part of the Tailscale Mesh.
+  - **SSH Access**: Recommended to restrict SSH access solely to the Tailscale IP via `sshd_config`.
+  - **ACLs**: Use Tailscale ACLs to prevent Workers from accessing the Control Plane management port.
+- **Firewall**:
+  - **Tailscale**: Trusted Interface (`tailscale0` allowed).
+  - **Public**: Minimal ports open (80/443 for Ingress, UDP for WireGuard/Xray).
