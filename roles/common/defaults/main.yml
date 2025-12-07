@@ -1,0 +1,3 @@
+---
+system_swap_enabled: true
+swap_file_path: /swapfile

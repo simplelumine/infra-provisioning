@@ -1,0 +1,74 @@
+---
+- name: Determine if Swap should be configured
+  when: system_swap_enabled | bool
+  block:
+    - name: Calculate Swap Size
+      set_fact:
+        swap_size_mb: >-
+          {%- if ansible_memtotal_mb < 2048 -%}
+          2048
+          {%- elif ansible_memtotal_mb > 8192 -%}
+          8192
+          {%- else -%}
+          {{ ansible_memtotal_mb }}
+          {%- endif -%}
+      tags: swap
+
+    - name: Display calculated Swap Size
+      debug:
+        msg: "Calculated Swap Size: {{ swap_size_mb }} MB for System Memory: {{ ansible_memtotal_mb }} MB"
+      tags: swap
+
+    - name: Check if swap file exists
+      stat:
+        path: "{{ swap_file_path }}"
+      register: swap_file_check
+      tags: swap
+
+    - name: Create swap file (this may take some time)
+      command: dd if=/dev/zero of={{ swap_file_path }} bs=1M count={{ swap_size_mb }} status=none
+      when: not swap_file_check.stat.exists
+      tags: swap
+
+    - name: Set permissions on swap file
+      file:
+        path: "{{ swap_file_path }}"
+        owner: root
+        group: root
+        mode: '0600'
+      tags: swap
+
+    - name: Format swap file
+      command: mkswap {{ swap_file_path }}
+      when: not swap_file_check.stat.exists
+      tags: swap
+
+    - name: Check if swap is active
+      command: swapon -s
+      register: swapon_status
+      changed_when: false
+      tags: swap
+
+    - name: Enable swap file
+      command: swapon {{ swap_file_path }}
+      when: swap_file_path not in swapon_status.stdout
+      tags: swap
+
+    - name: Add swap to /etc/fstab
+      mount:
+        path: none
+        src: "{{ swap_file_path }}"
+        fstype: swap
+        opts: sw
+        passno: 0
+        dump: 0
+        state: present
+      tags: swap
+
+    - name: Set vm.swappiness
+      sysctl:
+        name: vm.swappiness
+        value: '60'
+        state: present
+        reload: true
+      tags: swap
