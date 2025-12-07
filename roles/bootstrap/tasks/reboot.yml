@@ -1,7 +1,7 @@
 ---
 - name: Reboot server
   reboot:
-    msg: "Rebooting after bootstrap"
+    msg: "Rebooting after upgrade"
     connect_timeout: 5
     reboot_timeout: 600
     pre_reboot_delay: 0

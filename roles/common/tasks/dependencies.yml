@@ -1,0 +1,12 @@
+---
+- name: Install system dependencies (Common)
+  apt:
+    name:
+      - curl
+      - gnupg
+      - ca-certificates
+      - htop
+      - systemd-timesyncd
+      - fail2ban
+    state: present
+    update_cache: true

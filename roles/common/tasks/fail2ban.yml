@@ -1,0 +1,6 @@
+---
+- name: Ensure Fail2Ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: true

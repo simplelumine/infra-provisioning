@@ -1,5 +1,15 @@
 ---
 # =============================================================================
+# 0. COMMON CONFIGURATION (All Nodes)
+# =============================================================================
+- name: Apply Base Configuration (Common)
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - common
+
+# =============================================================================
 # 1. EDGE NODES (Standalone Bastions/Proxies)
 # =============================================================================
 - name: Configure Edge Nodes

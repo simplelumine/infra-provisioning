@@ -1,0 +1,10 @@
+---
+- name: Harden SSH configuration (Template)
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart SSH

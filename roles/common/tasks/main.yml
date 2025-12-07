@@ -1,0 +1,6 @@
+---
+- import_tasks: hosts.yml
+- import_tasks: dependencies.yml
+- import_tasks: ntp.yml
+- import_tasks: fail2ban.yml
+- import_tasks: sshd.yml

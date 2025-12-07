@@ -1,6 +1,6 @@
 ---
 - import_tasks: init.yml
-- import_tasks: update.yml
 - import_tasks: user.yml
-- import_tasks: ssh.yml
+- import_tasks: update.yml
 - import_tasks: reboot.yml
+- import_tasks: ssh.yml
