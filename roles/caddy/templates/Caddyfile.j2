@@ -1,0 +1,37 @@
+{
+    # Global Options
+    # High performance tuning for modern protocols
+    servers {
+        protocol {
+            experimental_http3
+        }
+    }
+}
+
+{{ edge_domain }} {
+    # Automatic HTTPS is enabled by default for this domain
+    
+    # Secure Transport to Origin Cluster
+    # Caddy will terminate TLS from client, and initiate new TLS to Origin
+    reverse_proxy https://{{ cluster_ingress_ip }} {
+        # Pass the original Host header or a specific upstream host
+        # If your cluster ingress expects the public domain in SNI, keep default.
+        # If it expects an internal DNS name, use header_up Host <internal_name>
+        header_up Host {{ upstream_host | default(edge_domain) }}
+
+        transport http {
+            tls
+            # If your origin uses a self-signed or internal CA, uncomment below:
+            # tls_insecure_skip_verify
+        }
+    }
+
+    # Logging (Optional but recommended)
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 3
+            roll_keep_for 7d
+        }
+    }
+}

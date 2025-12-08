@@ -1,5 +1,16 @@
 ---
 peer_group: prod_cluster
-k3s_leader_host: prod_cluster_host
+
 tailscale_auth_key: ""
-k3s_install_version: v1.31.3+k3s1
+
+# --- Firewall Capabilities ---
+firewall_enable_tailscale_trust: true
+firewall_enable_cluster_trust: true
+firewall_enable_nodeports: true
+firewall_enable_ingress: true
+firewall_enable_xray: true
+
+# K3s Version Pinning
+k3s_install_version: ""
+k3s_etcd_mode: true
+k3s_leader_host: 

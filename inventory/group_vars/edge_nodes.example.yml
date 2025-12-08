@@ -1,10 +1,10 @@
 ---
 tailscale_auth_key: ""
+tailscale_advertise_exit_node: true
 
-xray_port_tcp: 
-
-xray_clients:
-  - id: ""
-    name: ""
-
-xray_private_key: ""
+# --- Firewall Capabilities ---
+firewall_enable_tailscale_trust: true
+firewall_enable_cluster_trust: false
+firewall_enable_nodeports: false
+firewall_enable_ingress: true
+firewall_enable_xray: true

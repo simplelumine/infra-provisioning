@@ -1,6 +1,17 @@
 ---
-admin_user: your_admin_user
+admin_user: 
 
-# K3s Version Pinning
-# Check https://github.com/k3s-io/k3s/releases for latest stable
-k3s_install_version: "v1.34.2+k3s1"
+k3s_install_version: "v1.31.2+k3s1"
+
+# --- Xray Configuration ---
+xray_port_tcp: 
+xray_private_key: "{{ vault_xray_private_key }}"
+
+xray_clients:
+  - id: "{{ vault_xray_u_admin }}"
+    email: ""
+    level: 0
+
+  - id: "{{ vault_xray_u_partner }}"
+    email: ""
+    level: 0

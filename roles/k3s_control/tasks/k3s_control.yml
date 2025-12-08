@@ -21,7 +21,9 @@
   set_fact:
     k3s_mode_args: >-
       {% if inventory_hostname == k3s_leader_host %}
-      --cluster-init
+        {% if k3s_etcd_mode | bool %}
+        --cluster-init
+        {% endif %}
       {% else %}
       --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
       {% endif %}
