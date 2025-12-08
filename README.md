@@ -21,10 +21,12 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 
 ### Edge Acceleration Layer
 - **Components**: [Caddy](https://caddyserver.com/) + Xray.
-- **Purpose**: Accelerate access for global users (specifically optimizing for CN2 GIA links).
+- **Routing Strategy**: Hybrid Model.
+    - **Global**: Cloudflare -> Cluster Public IP.
+    - **China**: DMIT Edge (CN2GIA) -> Cluster Public IP (Direct High-Speed).
 - **Technology**:
-    - **Caddy**: Acts as the HTTP/3 (QUIC) Ingress Gateway. Automatically manages Certificates and terminates TLS before proxying to the origin cluster via **Secure Transport (HTTPS)**.
-    - **Xray**: Handles VLESS-Reality protocols for specific transit needs.
+    - **Caddy**: L7 Reverse Proxy with Host Header Injection to bypass Cloudflare hairpinning. Load Balances across multiple Worker nodes.
+    - **Xray**: VLESS-Reality for specialized caching/transit.
 
 ## 📂 Repository Structure
 
@@ -70,8 +72,25 @@ ansible-playbook -i inventory/bootstrap.ini bootstrap.yml
 ansible-playbook -i inventory/hosts.ini site.yml
 ```
 
- **Deploy Specific Component**
+### Quick Command Reference (Cheat Sheet)
+
+**Connectivity Checks**
 ```bash
-# Example: Only update Edge Proxies
-ansible-playbook -i inventory/hosts.ini site.yml --tags caddy
+# Check Bootstrap User (root/ubuntu)
+ansible <host> -i inventory/bootstrap.ini -m ping 
+
+# Check Provisioned User (simplelumine)
+ansible <host> -i inventory/hosts.ini -m ping
+```
+
+**Playbook Execution**
+```bash
+# Phase 1: Bootstrap (Initial Setup)
+ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit <host> -vvv
+
+# Phase 2: Full Site Provisioning
+ansible-playbook site.yml -i inventory/hosts.ini --limit <host> -vvv
+
+# Update Only Caddy Configuration (Fast)
+ansible-playbook site.yml -i inventory/hosts.ini --limit <host> --tags caddy
 ```

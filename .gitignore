@@ -5,6 +5,7 @@ inventory/group_vars/all/vars.yml
 inventory/group_vars/prod_cluster.yml
 inventory/group_vars/lab_cluster.yml
 inventory/group_vars/edge_nodes.yml
+inventory/host_vars/lab-hkg-eg1.yml
 *.retry
 *.log
 .DS_Store

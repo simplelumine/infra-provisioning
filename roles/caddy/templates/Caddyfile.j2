@@ -8,16 +8,16 @@
     }
 }
 
-{{ edge_domain }} {
+{% for site in caddy_sites %}
+{{ site.domain }} {
     # Automatic HTTPS is enabled by default for this domain
     
-    # Secure Transport to Origin Cluster
+    # Secure Transport to Origin Cluster (Bypass Cloudflare)
     # Caddy will terminate TLS from client, and initiate new TLS to Origin
-    reverse_proxy https://{{ cluster_ingress_ip }} {
+    reverse_proxy {{ site.upstream }} {
         # Pass the original Host header or a specific upstream host
-        # If your cluster ingress expects the public domain in SNI, keep default.
-        # If it expects an internal DNS name, use header_up Host <internal_name>
-        header_up Host {{ upstream_host | default(edge_domain) }}
+        # This is CRITICAL if the upstream is an IP address (Cloudflare Bypass)
+        header_up Host {{ site.host_header | default(site.domain) }}
 
         transport http {
             tls
@@ -28,10 +28,11 @@
 
     # Logging (Optional but recommended)
     log {
-        output file /var/log/caddy/access.log {
+        output file /var/log/caddy/access-{{ site.domain | replace('.', '_') }}.log {
             roll_size 100mb
             roll_keep 3
             roll_keep_for 7d
         }
     }
 }
+{% endfor %}

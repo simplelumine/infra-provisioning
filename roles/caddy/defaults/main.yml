@@ -1,7 +1,2 @@
 ---
-# Default upstream (Cluster Ingress IP)
-# Ideally this is overridden in group_vars/edge_nodes.yml
-cluster_ingress_ip: "127.0.0.1" 
-
-# The domain handled by this edge node
-edge_domain: "example.com"
+caddy_sites: []

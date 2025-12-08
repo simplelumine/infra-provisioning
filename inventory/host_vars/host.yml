@@ -1,0 +1,5 @@
+---
+caddy_sites:
+  - domain: "xxx.xxx.com"
+    upstream: ""
+    host_header: "xxx.xxx.com"
