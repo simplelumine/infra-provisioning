@@ -14,7 +14,7 @@
 -A INPUT -i tailscale0 -j ACCEPT
 {% endif %}
 
-# 3. Cluster Trust Zone (Trust other nodes)
+# 3. Cluster Trust Zone (Trust ALL inventory nodes if enabled)
 {% if firewall_enable_cluster_trust | default(false) %}
   {% for host in groups['all'] %}
     {% if hostvars[host]['ansible_host'] is defined and host != inventory_hostname %}

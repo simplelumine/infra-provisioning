@@ -1,2 +1,2 @@
 ---
-- import_tasks: k3s-control.yml
+- import_tasks: k3s_control.yml

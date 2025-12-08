@@ -24,6 +24,7 @@
     - k8s_prereqs
     - k3s_control
     - cilium
+    - xray
 
 - name: Configure Worker Nodes
   hosts: prod_worker_nodes:lab_worker_nodes
@@ -34,4 +35,5 @@
     - firewall
     - k8s_prereqs
     - k3s_worker
+    - xray
 

@@ -4,48 +4,32 @@
     msg: "k3s_leader_host variable must be defined in group_vars"
   when: k3s_leader_host is not defined
 
-- name: Install K3s on Primary Node (Leader)
-  shell: |
-    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
-    --node-external-ip {{ ansible_host }} \
-    --cluster-init \
-    --flannel-backend=none \
-    --disable-network-policy \
-    --disable-kube-proxy \
-    --disable=traefik \
-    --disable=servicelb \
-    --disable=metrics-server \
-    --kubelet-arg="fail-swap-on=false" \
-    --tls-san {{ ansible_host }} \
-    --tls-san {{ inventory_hostname }}
-  args:
-    creates: /var/lib/rancher/k3s/server/node-token
-  when: inventory_hostname == k3s_leader_host
-
-- name: Retrieve K3s Token from Leader
+- name: Retrieve K3s Token from Leader (Followers only)
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
   register: leader_token_raw
   delegate_to: "{{ k3s_leader_host }}"
   run_once: true
-
-- name: Set Token Fact
-  set_fact:
-    k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
-
-- name: Wait for Leader K3s API to be ready
-  wait_for:
-    host: "{{ hostvars[k3s_leader_host]['ansible_host'] }}"
-    port: 6443
-    delay: 5
-    timeout: 300
   when: inventory_hostname != k3s_leader_host
 
-- name: Install K3s on Secondary Nodes (Followers)
+- name: Set Token Fact (Followers only)
+  set_fact:
+    k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
+  when: inventory_hostname != k3s_leader_host
+
+- name: Define K3s Installation Args
+  set_fact:
+    k3s_mode_args: >-
+      {% if inventory_hostname == k3s_leader_host %}
+      --cluster-init
+      {% else %}
+      --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
+      {% endif %}
+
+- name: Install K3s Server
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
-    --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 \
-    --token {{ k3s_token }} \
+    {{ k3s_mode_args }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=none \
     --disable-network-policy \
@@ -58,7 +42,6 @@
     --tls-san {{ inventory_hostname }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
-  when: inventory_hostname != k3s_leader_host
 
 - name: Retrieve K3s Kubeconfig (Leader Only)
   slurp:
@@ -66,7 +49,7 @@
   register: k3s_kubeconfig_base64
   when: inventory_hostname == k3s_leader_host
 
-- name: Get Tailscale IP from Leader
+- name: Get Tailscale IP from Leader (Leader Only)
   command: tailscale ip -4
   register: tailscale_ip_output
   changed_when: false

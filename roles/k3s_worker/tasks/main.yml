@@ -1,2 +1,2 @@
 ---
-- import_tasks: k3s-worker.yml
+- import_tasks: k3s_worker.yml
