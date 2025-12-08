@@ -1,3 +1,2 @@
 ---
-- import_tasks: k8s-prereqs.yml
 - import_tasks: k3s-worker.yml

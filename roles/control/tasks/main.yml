@@ -1,4 +1,0 @@
----
-- import_tasks: k8s-prereqs.yml
-- import_tasks: k3s-control.yml
-- import_tasks: cilium.yml

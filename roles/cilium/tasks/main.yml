@@ -10,6 +10,7 @@
     helm repo add cilium https://helm.cilium.io/
     helm repo update
   changed_when: false
+  run_once: true
 
 - name: Render Cilium Values
   copy:
@@ -36,3 +37,4 @@
     helm upgrade --install cilium cilium/cilium --namespace kube-system --values /tmp/cilium-values.yaml
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true

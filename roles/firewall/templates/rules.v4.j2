@@ -1,0 +1,43 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# 1. Base Rules (Always Active)
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -p tcp --dport 22 -j ACCEPT
+
+# 2. Tailscale Trust Zone
+{% if firewall_enable_tailscale_trust | default(false) %}
+-A INPUT -i tailscale0 -j ACCEPT
+{% endif %}
+
+# 3. Cluster Trust Zone (Trust other nodes)
+{% if firewall_enable_cluster_trust | default(false) %}
+  {% for host in groups['all'] %}
+    {% if hostvars[host]['ansible_host'] is defined and host != inventory_hostname %}
+-A INPUT -s {{ hostvars[host]['ansible_host'] }} -j ACCEPT
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+# 4. NodePorts (Range)
+{% if firewall_enable_nodeports | default(false) %}
+-A INPUT -p tcp --dport 30000:32767 -j ACCEPT
+-A INPUT -p udp --dport 30000:32767 -j ACCEPT
+{% endif %}
+
+# 5. Standard Ingress (HTTP/HTTPS)
+{% if firewall_enable_ingress | default(false) %}
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+{% endif %}
+
+# 6. Xray Service (Dynamic Port)
+{% if firewall_enable_xray | default(false) %}
+-A INPUT -p tcp --dport {{ xray_port_tcp | default(443) }} -j ACCEPT
+{% endif %}
+
+COMMIT

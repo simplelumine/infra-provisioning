@@ -1,0 +1,3 @@
+---
+dependencies:
+  - { role: xray, when: enable_xray | default(true) }

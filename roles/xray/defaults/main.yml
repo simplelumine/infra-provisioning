@@ -1,0 +1,4 @@
+---
+xray_port_tcp: 443
+xray_clients: []
+xray_private_key: "" # Needs to be overridden in group_vars or secrets

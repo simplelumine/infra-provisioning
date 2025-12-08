@@ -1,4 +1,3 @@
----
 - name: Apply Base Configuration (Common)
   hosts: all
   become: true
@@ -11,18 +10,28 @@
   become: true
   gather_facts: true
   roles:
-    - edge
+    - tailscale
+    - firewall
+    - xray
 
 - name: Configure Control Plane
   hosts: prod_control_plane:lab_control_plane
   become: true
   gather_facts: true
   roles:
-    - control
+    - tailscale
+    - firewall
+    - k8s_prereqs
+    - k3s_control
+    - cilium
 
 - name: Configure Worker Nodes
   hosts: prod_worker_nodes:lab_worker_nodes
   become: true
   gather_facts: true
   roles:
-    - worker
+    - tailscale
+    - firewall
+    - k8s_prereqs
+    - k3s_worker
+
