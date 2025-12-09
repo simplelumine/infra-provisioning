@@ -1,13 +1,16 @@
-inventory/hosts.ini
-inventory/bootstrap.ini
-inventory/group_vars/all/secrets.yml
-inventory/group_vars/all/vars.yml
-inventory/group_vars/prod_cluster.yml
-inventory/group_vars/lab_cluster.yml
-inventory/group_vars/edge_nodes.yml
-inventory/host_vars/lab-hkg-eg1.yml
+# Common ignores
 *.retry
 *.log
 .DS_Store
 .idea/
 .vscode/
+
+# Kubeconfig (contains cluster credentials)
+.kube/
+
+# Ignore inventory contents (contains sensitive data)
+# But keep example files and directory structure
+inventory/**/*
+!inventory/**/
+!inventory/**/*.example.yml
+!inventory/**/*.example.ini

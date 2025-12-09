@@ -9,7 +9,8 @@
       "protocol": "vless",
       "settings": {
         "clients": [
-          {% for client in xray_clients %}
+          {% set all_clients = xray_clients + (xray_host_clients | default([])) %}
+          {% for client in all_clients %}
           {
             "id": "{{ client.id }}",
             "flow": "xtls-rprx-vision"

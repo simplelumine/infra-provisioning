@@ -3,3 +3,7 @@ caddy_sites:
   - domain: "xxx.xxx.com"
     upstream: ""
     host_header: "xxx.xxx.com"
+
+xray_host_clients:
+  - id: "xxxx"
+    email: "temp-xxx"

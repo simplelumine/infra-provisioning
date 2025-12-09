@@ -17,7 +17,6 @@
     --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 \
     --token {{ k3s_token_slurp.content | b64decode | trim }} \
     --node-external-ip {{ ansible_host }} \
-    --flannel-backend=none \
     --kubelet-arg="fail-swap-on=false"
   args:
     creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig

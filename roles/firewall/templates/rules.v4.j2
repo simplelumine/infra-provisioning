@@ -37,7 +37,7 @@
 
 # 6. Xray Service (Dynamic Port)
 {% if firewall_enable_xray | default(false) %}
--A INPUT -p tcp --dport {{ xray_port_tcp | default(443) }} -j ACCEPT
+-A INPUT -p tcp --dport {{ xray_port_tcp }} -j ACCEPT
 {% endif %}
 
 COMMIT

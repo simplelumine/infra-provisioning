@@ -1,4 +1,5 @@
 ---
-xray_port_tcp: 443
+xray_port_tcp: ""  # Must be defined in group_vars
 xray_clients: []
-xray_private_key: "" # Needs to be overridden in group_vars or secrets
+xray_host_clients: []  # Per-host clients (optional, merged with global)
+xray_private_key: ""  # Must be defined in group_vars or secrets

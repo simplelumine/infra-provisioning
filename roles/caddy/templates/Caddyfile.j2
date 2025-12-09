@@ -1,38 +1,12 @@
-{
-    # Global Options
-    # High performance tuning for modern protocols
-    servers {
-        protocol {
-            experimental_http3
-        }
-    }
-}
-
 {% for site in caddy_sites %}
 {{ site.domain }} {
-    # Automatic HTTPS is enabled by default for this domain
-    
-    # Secure Transport to Origin Cluster (Bypass Cloudflare)
-    # Caddy will terminate TLS from client, and initiate new TLS to Origin
     reverse_proxy {{ site.upstream }} {
-        # Pass the original Host header or a specific upstream host
-        # This is CRITICAL if the upstream is an IP address (Cloudflare Bypass)
         header_up Host {{ site.host_header | default(site.domain) }}
-
+{% if site.upstream.startswith('https://') %}
         transport http {
             tls
-            # If your origin uses a self-signed or internal CA, uncomment below:
-            # tls_insecure_skip_verify
         }
-    }
-
-    # Logging (Optional but recommended)
-    log {
-        output file /var/log/caddy/access-{{ site.domain | replace('.', '_') }}.log {
-            roll_size 100mb
-            roll_keep 3
-            roll_keep_for 7d
-        }
+{% endif %}
     }
 }
 {% endfor %}

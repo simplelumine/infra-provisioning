@@ -12,6 +12,15 @@
   changed_when: false
   run_once: true
 
+- name: Check if Cilium is installed
+  shell: helm list -n kube-system -o json | grep -q '"name":"cilium"'
+  register: cilium_check
+  failed_when: false
+  changed_when: false
+  run_once: true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
 - name: Render Cilium Values
   copy:
     content: |
@@ -30,6 +39,7 @@
         ui:
           enabled: false
     dest: /tmp/cilium-values.yaml
+  when: cilium_check.rc != 0
 
 - name: Install Cilium via Helm CLI
   shell: |
@@ -38,3 +48,4 @@
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
+  when: cilium_check.rc != 0

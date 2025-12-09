@@ -1,4 +1,10 @@
----
+- name: Configure Fail2Ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+  notify: Restart Fail2Ban
+
 - name: Ensure Fail2Ban is running
   service:
     name: fail2ban
