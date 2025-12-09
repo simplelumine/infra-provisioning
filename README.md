@@ -83,15 +83,12 @@ ansible $TARGET -i inventory/bootstrap.ini -m ping
 
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET
 
-ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -vvv 
-
 # Phase 2: Full Site Provisioning
 ansible $TARGET -i inventory/hosts.ini -m ping
 
 ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET
 
+# other
 ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET -vvv 
-
-# Update Only Caddy Configuration (Fast)
 ansible-playbook site.yml -i inventory/hosts.ini -l $TARGET --tags caddy
 ```

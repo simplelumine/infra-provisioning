@@ -1,0 +1,71 @@
+---
+- name: Gather system facts
+  setup:
+
+- name: Check if system is Debian 12 (Bookworm)
+  set_fact:
+    needs_distro_upgrade: "{{ ansible_distribution == 'Debian' and ansible_distribution_major_version == '12' }}"
+
+- name: Perform Debian 12 to 13 Upgrade
+  block:
+    - name: Update current system (Bookworm)
+      apt:
+        update_cache: yes
+        upgrade: dist
+      register: bookworm_update
+
+    - name: Switch APT sources from Bookworm to Trixie (main)
+      replace:
+        path: /etc/apt/sources.list
+        regexp: 'bookworm'
+        replace: 'trixie'
+        backup: yes
+      ignore_errors: yes
+
+    - name: Find additional APT source files
+      find:
+        paths: /etc/apt/sources.list.d
+        patterns:
+          - '*.list'
+          - '*.sources'
+      register: apt_source_files
+
+    - name: Switch APT sources from Bookworm to Trixie (sources.list.d)
+      replace:
+        path: "{{ item.path }}"
+        regexp: 'bookworm'
+        replace: 'trixie'
+        backup: yes
+      loop: "{{ apt_source_files.files }}"
+      when: apt_source_files.files | length > 0
+
+    - name: Perform Full Distribution Upgrade (Trixie)
+      apt:
+        upgrade: dist
+        update_cache: yes
+        dpkg_options: 'force-confnew,force-confdef'
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Remove orphaned packages
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: Reset Python interpreter for post-upgrade compatibility
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Reboot to load new kernel
+      reboot:
+        msg: "Rebooting system after upgrading to Debian 13 (Trixie)"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: cat /etc/debian_version
+
+    - name: Refresh Ansible Facts
+      setup:
+
+  when: needs_distro_upgrade
