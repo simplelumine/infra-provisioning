@@ -1,4 +1,9 @@
 ---
+# Skip entire role if no sites are configured
+- name: Skip Caddy role if no sites configured
+  meta: end_role
+  when: caddy_sites | length == 0
+
 - name: Install Caddy Prerequisites
   apt:
     name:

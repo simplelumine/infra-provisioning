@@ -19,17 +19,54 @@
         msg: "Calculated Swap Size: {{ swap_size_mb }} MB for System Memory: {{ ansible_memtotal_mb }} MB"
       tags: swap
 
+    - name: Get root filesystem type
+      command: findmnt -n -o FSTYPE /
+      register: root_fstype
+      changed_when: false
+      tags: swap
+
+    - name: Set filesystem type fact
+      set_fact:
+        is_btrfs: "{{ root_fstype.stdout | trim == 'btrfs' }}"
+      tags: swap
+
     - name: Check if swap file exists
       stat:
         path: "{{ swap_file_path }}"
       register: swap_file_check
       tags: swap
 
-    - name: Create swap file (this may take some time)
+    # ===== Standard Filesystem (ext4, xfs, etc.) =====
+    - name: Create swap file (Standard FS)
       command: dd if=/dev/zero of={{ swap_file_path }} bs=1M count={{ swap_size_mb }} status=none
-      when: not swap_file_check.stat.exists
+      when:
+        - not swap_file_check.stat.exists
+        - not is_btrfs
       tags: swap
 
+    # ===== Btrfs Filesystem (Requires NOCOW) =====
+    - name: Create empty swap file for NOCOW (Btrfs)
+      command: truncate -s 0 {{ swap_file_path }}
+      when:
+        - not swap_file_check.stat.exists
+        - is_btrfs
+      tags: swap
+
+    - name: Set NOCOW attribute (Btrfs)
+      command: chattr +C {{ swap_file_path }}
+      when:
+        - not swap_file_check.stat.exists
+        - is_btrfs
+      tags: swap
+
+    - name: Allocate swap file space (Btrfs)
+      command: fallocate -l {{ swap_size_mb }}M {{ swap_file_path }}
+      when:
+        - not swap_file_check.stat.exists
+        - is_btrfs
+      tags: swap
+
+    # ===== Common Steps =====
     - name: Set permissions on swap file
       file:
         path: "{{ swap_file_path }}"

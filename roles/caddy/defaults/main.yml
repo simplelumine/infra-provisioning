@@ -1,2 +1,5 @@
 ---
+# Caddy Role Defaults
+# Set caddy_sites to enable Caddy reverse proxy
+# If caddy_sites is empty, the role will be skipped entirely
 caddy_sites: []

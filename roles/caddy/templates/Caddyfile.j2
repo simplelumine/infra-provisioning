@@ -1,3 +1,4 @@
+# Caddyfile - Managed by Ansible
 {% for site in caddy_sites %}
 {{ site.domain }} {
     reverse_proxy {{ site.upstream }} {

@@ -17,16 +17,21 @@
     k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
   when: inventory_hostname != k3s_leader_host
 
+- name: Get Tailscale IP
+  command: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+
 - name: Define K3s Installation Args
   set_fact:
     k3s_mode_args: >-
-      {% if inventory_hostname == k3s_leader_host %}
-        {% if k3s_etcd_mode | bool %}
-        --cluster-init
-        {% endif %}
-      {% else %}
-      --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
-      {% endif %}
+      {%- if inventory_hostname == k3s_leader_host -%}
+        {%- if k3s_etcd_mode | bool -%}
+          --cluster-init
+        {%- endif -%}
+      {%- else -%}
+        --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
+      {%- endif -%}
 
 - name: Install K3s Server
   shell: |
@@ -41,7 +46,8 @@
     --disable=metrics-server \
     --kubelet-arg="fail-swap-on=false" \
     --tls-san {{ ansible_host }} \
-    --tls-san {{ inventory_hostname }}
+    --tls-san {{ inventory_hostname }} \
+    --tls-san {{ tailscale_ip_output.stdout | trim }}
   args:
     creates: /var/lib/rancher/k3s/server/node-token
 

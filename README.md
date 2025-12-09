@@ -74,23 +74,24 @@ ansible-playbook -i inventory/hosts.ini site.yml
 
 ### Quick Command Reference (Cheat Sheet)
 
-**Connectivity Checks**
-```bash
-# Check Bootstrap User (root/ubuntu)
-ansible <host> -i inventory/bootstrap.ini -m ping 
-
-# Check Provisioned User (simplelumine)
-ansible <host> -i inventory/hosts.ini -m ping
-```
-
 **Playbook Execution**
 ```bash
+export TARGET=HOST
+
 # Phase 1: Bootstrap (Initial Setup)
-ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit <host> -vvv
+ansible $TARGET -i inventory/bootstrap.ini -m ping
+
+ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET
+
+ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -vvv 
 
 # Phase 2: Full Site Provisioning
-ansible-playbook site.yml -i inventory/hosts.ini --limit <host> -vvv
+ansible $TARGET -i inventory/hosts.ini -m ping
+
+ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET
+
+ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET -vvv 
 
 # Update Only Caddy Configuration (Fast)
-ansible-playbook site.yml -i inventory/hosts.ini --limit <host> --tags caddy
+ansible-playbook site.yml -i inventory/hosts.ini -l $TARGET --tags caddy
 ```
