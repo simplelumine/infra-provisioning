@@ -14,8 +14,8 @@
     state: present
     reload: true
   loop:
-    - { name: 'net.ipv4.ip_forward', value: '1' }
-    - { name: 'net.ipv6.conf.all.forwarding', value: '1' }
+    - { name: "net.ipv4.ip_forward", value: "1" }
+    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
 
 - name: Ensure Tailscale service is running
   service:
@@ -38,6 +38,11 @@
      (ts_status.stdout | from_json).BackendState != 'Running')
   register: tailscale_up
   changed_when: tailscale_up.rc == 0
+
+- name: Enable Tailscale Peer Relay
+  command: tailscale set --relay-server-port {{ tailscale_peer_relay_port }}
+  when: tailscale_enable_peer_relay | default(false)
+  changed_when: false # tailscale set is usually idempotent-ish
 
 - name: Advertise as Exit Node (Optional)
   command: tailscale set --advertise-exit-node

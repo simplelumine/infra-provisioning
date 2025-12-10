@@ -29,7 +29,12 @@
 -A INPUT -p udp --dport 30000:32767 -j ACCEPT
 {% endif %}
 
-# 5. Standard Ingress (HTTP/HTTPS)
+# 5. Tailscale Peer Relay
+{% if tailscale_enable_peer_relay | default(false) %}
+-A INPUT -p udp --dport {{ tailscale_peer_relay_port }} -j ACCEPT
+{% endif %}
+
+# 6. Standard Ingress (HTTP/HTTPS)
 {% if firewall_enable_ingress | default(false) %}
 -A INPUT -p tcp --dport 80 -j ACCEPT
 -A INPUT -p tcp --dport 443 -j ACCEPT

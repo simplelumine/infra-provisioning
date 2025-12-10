@@ -1,2 +1,3 @@
 ---
-tailscale_advertise_exit_node: false
+tailscale_enable_peer_relay: false
+tailscale_peer_relay_port: 41641
