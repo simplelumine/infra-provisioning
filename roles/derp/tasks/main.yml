@@ -1,0 +1,55 @@
+---
+- name: Create DERP directory
+  file:
+    path: /opt/derp
+    state: directory
+    mode: "0755"
+
+- name: Check if Go is installed
+  command: /usr/local/go/bin/go version
+  register: go_check
+  failed_when: false
+  changed_when: false
+
+- name: Download Go
+  get_url:
+    url: https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
+    dest: /tmp/go.tar.gz
+  when: go_check.rc != 0
+
+- name: Extract Go
+  unarchive:
+    src: /tmp/go.tar.gz
+    dest: /usr/local
+    remote_src: yes
+  when: go_check.rc != 0
+
+- name: Check if derper exists
+  stat:
+    path: /opt/derp/derper
+  register: derper_stat
+
+- name: Build derper using Go
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    export GOPATH=/opt/derp/go
+    go install tailscale.com/cmd/derper@latest
+    cp /opt/derp/go/bin/derper /opt/derp/derper
+  args:
+    creates: /opt/derp/derper
+  when: not derper_stat.stat.exists
+  notify: Restart DERP
+
+- name: Deploy DERP systemd service
+  template:
+    src: derper.service.j2
+    dest: /etc/systemd/system/derper.service
+  notify: Restart DERP
+
+- name: Enable and start DERP service
+  systemd:
+    name: derper
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: derp_enabled | default(false)

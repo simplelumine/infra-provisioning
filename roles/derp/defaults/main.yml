@@ -1,0 +1,6 @@
+---
+derp_enabled: false
+derp_hostname: ""  # e.g., relay.simplelumine.com (used by Caddy)
+derp_http_port: 3340  # Internal port, Caddy proxies to this
+derp_stun_port: 3478
+derp_verify_clients: true

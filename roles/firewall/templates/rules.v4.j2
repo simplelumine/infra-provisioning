@@ -40,9 +40,14 @@
 -A INPUT -p tcp --dport 443 -j ACCEPT
 {% endif %}
 
-# 6. Xray Service (Dynamic Port)
+# 7. Xray Service (Dynamic Port)
 {% if firewall_enable_xray | default(false) %}
 -A INPUT -p tcp --dport {{ xray_port_tcp }} -j ACCEPT
+{% endif %}
+
+# 8. DERP STUN Port
+{% if derp_enabled | default(false) %}
+-A INPUT -p udp --dport {{ derp_stun_port | default(3478) }} -j ACCEPT
 {% endif %}
 
 COMMIT

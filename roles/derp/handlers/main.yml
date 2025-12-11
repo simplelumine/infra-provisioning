@@ -1,0 +1,7 @@
+---
+- name: Restart DERP
+  systemd:
+    name: derper
+    state: restarted
+    daemon_reload: true
+  when: derp_enabled | default(false)

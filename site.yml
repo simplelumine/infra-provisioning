@@ -14,6 +14,7 @@
     - firewall
     - xray
     - caddy
+    - derp
 
 - name: Configure Control Plane
   hosts: prod_control_plane:lab_control_plane
@@ -37,4 +38,3 @@
     - firewall
     - k8s_prereqs
     - k3s_worker
-

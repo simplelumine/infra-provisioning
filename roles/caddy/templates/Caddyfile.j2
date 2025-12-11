@@ -6,6 +6,9 @@
 {% if site.upstream.startswith('https://') %}
         transport http {
             tls
+{% if site.tls_insecure | default(false) %}
+            tls_insecure_skip_verify
+{% endif %}
         }
 {% endif %}
     }
