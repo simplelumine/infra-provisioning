@@ -18,15 +18,13 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 - **Management Mesh**: [Tailscale](https://tailscale.com/).
     - All nodes (WAN/LAN) join a unified Zero Trust mesh.
     - SSH and Management traffic are restricted to `tailscale0`.
+    - **DERP Relay**: Self-hosted custom DERP server for low-latency mesh connectivity.
+- **Security**: 
+    - **Firewall**: Node-level implementation for rigorous port access control.
 
 ### Edge Acceleration Layer
 - **Components**: [Caddy](https://caddyserver.com/) + Xray.
-- **Routing Strategy**: Hybrid Model.
-    - **Global**: Cloudflare -> Cluster Public IP.
-    - **China**: DMIT Edge (CN2GIA) -> Cluster Public IP (Direct High-Speed).
-- **Technology**:
-    - **Caddy**: L7 Reverse Proxy with Host Header Injection to bypass Cloudflare hairpinning. Load Balances across multiple Worker nodes.
-    - **Xray**: VLESS-Reality for specialized caching/transit.
+- **Routing Strategy**: Cloudflare -> Cluster Public IP.
 
 ## 📂 Repository Structure
 
@@ -40,14 +38,19 @@ infra-provisioning/
 │       ├── lab_cluster.yml    # Lab Config (HA=False)
 │       └── edge_nodes.yml     # Edge Config
 ├── roles/
-│   ├── common/                # Shared: Bootstrap, Tailscale, Firewall
+│   ├── bootstrap/             # Phase 1: OS Upgrade, User Setup, Hardening
+│   ├── common/                # Shared: NTP, Fail2ban, SSHD, Swap
+│   ├── tailscale/             # Management Mesh networking
+│   ├── firewall/              # Node-level firewall configuration
+│   ├── k8s_prereqs/           # Kernel modules & sysctl settings for K8s
 │   ├── k3s_control/           # K3s Server (Control Plane)
 │   ├── k3s_worker/            # K3s Agent (Worker Nodes)
-│   ├── cilium/                # CNI Installation
+│   ├── cilium/                # CNI Installation (GitOps/Helm)
 │   ├── caddy/                 # Edge Proxy (HTTP/3)
-│   └── xray/                  # Transit Proxy
-├── bootstrap.yml              # Phase 1: Root Initialization & Hardening
-└── site.yml                   # Phase 2: Main Provisioning
+│   ├── xray/                  # Transit Proxy
+│   └── derp/                  # Self-hosted Tailscale DERP Server
+├── bootstrap.yml              # Playbook: Initial Setup
+└── site.yml                   # Playbook: Main Provisioning
 ```
 
 ## 🚀 Deployment Guide
@@ -74,18 +77,21 @@ ansible-playbook -i inventory/hosts.ini site.yml
 
 ### Quick Command Reference (Cheat Sheet)
 
-**Playbook Execution**
+## Phase 1: Bootstrap (Initial Setup)
+
 ```bash
 export TARGET=HOST
 
-# Phase 1: Bootstrap (Initial Setup)
 ansible $TARGET -i inventory/bootstrap.ini -m ping
-
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -v
+```
 
-# Phase 2: Full Site Provisioning
+## Phase 2: Full Site Provisioning
+
+```bash
+export TARGET=HOST
+
 ansible $TARGET -i inventory/hosts.ini -m ping
-
 ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET -v
 
 # other
