@@ -7,10 +7,10 @@ tailscale_auth_key: ""
 firewall_enable_tailscale_trust: true
 firewall_enable_cluster_trust: true
 firewall_enable_nodeports: true
-firewall_enable_ingress: true
+firewall_enable_ingress: false
 firewall_enable_xray: true
 
 # K3s Version Pinning
 k3s_install_version: ""
 k3s_etcd_mode: false
-k3s_leader_host: 
+k3s_leader_host:

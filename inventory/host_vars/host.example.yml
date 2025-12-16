@@ -7,3 +7,7 @@ caddy_sites:
 xray_host_clients:
   - id: "xxxx"
     email: "temp-xxx"
+
+tailscale_derp_enabled: false
+tailscale_derp_hostname: ""
+tailscale_enable_peer_relay: false
