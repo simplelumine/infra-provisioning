@@ -46,8 +46,8 @@
 {% endif %}
 
 # 8. DERP STUN Port
-{% if derp_enabled | default(false) %}
--A INPUT -p udp --dport {{ derp_stun_port | default(3478) }} -j ACCEPT
+{% if tailscale_derp_enabled | default(false) %}
+-A INPUT -p udp --dport {{ tailscale_derp_stun_port | default(3478) }} -j ACCEPT
 {% endif %}
 
 COMMIT

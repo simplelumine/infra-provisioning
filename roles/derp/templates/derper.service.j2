@@ -8,11 +8,11 @@ Type=simple
 # It auto-generates a self-signed certificate
 # Caddy proxies https://relay.xxx -> https://127.0.0.1:8443 with tls_insecure_skip_verify
 ExecStart=/opt/derp/derper \
-  --hostname={{ derp_hostname }} \
-  -a=:{{ derp_https_port | default(8443) }} \
+  --hostname={{ tailscale_derp_hostname }} \
+  -a=:{{ tailscale_derp_http_port | default(8443) }} \
   --http-port=-1 \
-  --stun-port={{ derp_stun_port }} \
-{% if derp_verify_clients %}
+  --stun-port={{ tailscale_derp_stun_port }} \
+{% if tailscale_derp_verify_clients %}
   --verify-clients
 {% else %}
   --verify-clients=false

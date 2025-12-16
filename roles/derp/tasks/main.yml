@@ -52,4 +52,4 @@
     state: started
     enabled: true
     daemon_reload: true
-  when: derp_enabled | default(false)
+  when: tailscale_derp_enabled | default(false)
