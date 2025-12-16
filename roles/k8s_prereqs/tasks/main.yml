@@ -36,5 +36,6 @@
       - nfs-common
       - cryptsetup
       - dmsetup
+      - fuse
     state: present
     update_cache: true
