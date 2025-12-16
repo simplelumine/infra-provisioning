@@ -2,7 +2,7 @@
 - name: Enable IPv4 forwarding
   sysctl:
     name: net.ipv4.ip_forward
-    value: '1'
+    value: "1"
     sysctl_set: true
     state: present
     reload: true
@@ -28,3 +28,13 @@
     src: bpf
     fstype: bpf
     state: mounted
+
+- name: Install Longhorn/Storage dependencies
+  apt:
+    name:
+      - open-iscsi
+      - nfs-common
+      - cryptsetup
+      - dmsetup
+    state: present
+    update_cache: true
