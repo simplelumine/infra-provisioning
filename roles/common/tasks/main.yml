@@ -5,8 +5,3 @@
 - import_tasks: fail2ban.yml
 - import_tasks: sshd.yml
 - import_tasks: swap.yml
-
-- name: Install Docker (Conditional)
-  include_role:
-    name: docker
-  when: install_docker | default(false)

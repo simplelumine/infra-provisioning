@@ -1,7 +1,7 @@
 ---
 - name: Install iptables-persistent
   apt:
-    name: 
+    name:
       - iptables-persistent
       - netfilter-persistent
     state: present
@@ -10,6 +10,12 @@
   template:
     src: rules.v4.j2
     dest: /etc/iptables/rules.v4
+  notify: Reload Firewall
+
+- name: Deploy ip6tables rules (Data-Driven)
+  template:
+    src: rules.v6.j2
+    dest: /etc/iptables/rules.v6
   notify: Reload Firewall
 
 - name: Enable netfilter-persistent
