@@ -1,0 +1,84 @@
+---
+- name: Check if Docker is already installed
+  command: docker --version
+  register: docker_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Docker Installation Block
+  when: docker_installed.rc != 0
+  block:
+    - name: Uninstall conflicting packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+        purge: true
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Create directory for Docker GPG key
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker's official GPG key
+      get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker repository to Apt sources
+      shell: |
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        tee /etc/apt/sources.list.d/docker.sources > /dev/null
+      args:
+        creates: /etc/apt/sources.list.d/docker.sources
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Install Docker Engine and plugins
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+- name: Post-Install Configuration
+  when: docker_installed.rc != 0
+  block:
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ansible user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+- name: Firewall Warning
+  debug:
+    msg: "WARNING: Docker interacts with iptables. If you use ufw/firewalld, ensure compatibility. See: https://docs.docker.com/network/packet-filtering-firewalls/"
