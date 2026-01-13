@@ -11,3 +11,4 @@ xray_host_clients:
 tailscale_derp_enabled: false
 tailscale_derp_hostname: ""
 tailscale_enable_peer_relay: false
+tailscale_derp_http_port: xxxx

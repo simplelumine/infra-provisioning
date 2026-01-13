@@ -6,7 +6,7 @@
     - common
 
 - name: Configure Edge Nodes
-  hosts: edge_nodes
+  hosts: edge
   become: true
   gather_facts: true
   roles:
@@ -16,8 +16,17 @@
     - caddy
     - derp
 
+- name: Configure Sandbox Nodes (Testing Only)
+  hosts: sandbox
+  become: true
+  gather_facts: true
+  roles:
+    - tailscale
+    - xray
+    - firewall
+
 - name: Configure Control Plane
-  hosts: prod_control_plane:lab_control_plane
+  hosts: control_plane
   become: true
   gather_facts: true
   roles:
@@ -29,7 +38,7 @@
     - cilium
 
 - name: Configure Worker Nodes
-  hosts: prod_worker_nodes:lab_worker_nodes
+  hosts: worker_nodes
   become: true
   gather_facts: true
   roles:
