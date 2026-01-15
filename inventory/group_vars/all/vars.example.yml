@@ -3,6 +3,10 @@ admin_user:
 
 # Ansible Connection Defaults
 ansible_user: "{{ admin_user }}"
+# WARNING: The following settings disable SSH host key verification.
+# This makes connections vulnerable to man-in-the-middle (MITM) attacks.
+# Only use this for ephemeral/test environments or initial bootstrap.
+# For production, manage host keys properly via known_hosts or SSH certificates.
 ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
 # --- Xray Configuration ---
