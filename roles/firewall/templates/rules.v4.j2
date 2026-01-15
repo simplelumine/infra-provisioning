@@ -15,13 +15,13 @@
 {% endif %}
 
 # 3. Cluster Trust Zone (Trust only CLUSTER nodes' public IPs)
-{%- if firewall_enable_cluster_trust | default(false) %}
-{%- for host in groups['cluster'] | default([]) %}
-{%- if hostvars[host]['ansible_host'] is defined and host != inventory_hostname %}
+{% if firewall_enable_cluster_trust | default(false) %}
+{% for host in groups['cluster'] | default([]) %}
+{% if hostvars[host]['ansible_host'] is defined and host != inventory_hostname %}
 -A INPUT -s {{ hostvars[host]['ansible_host'] }} -j ACCEPT
-{%- endif %}
-{%- endfor %}
-{%- endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
 
 # 4. NodePorts (Range)
 {% if firewall_enable_nodeports | default(false) %}
