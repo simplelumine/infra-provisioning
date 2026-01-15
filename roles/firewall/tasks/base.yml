@@ -1,0 +1,76 @@
+---
+# IPv4 Base Rules
+- name: Allow related and established connections
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  notify: Save Firewall Rules
+
+- name: Allow loopback traffic
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    in_interface: lo
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  notify: Save Firewall Rules
+
+- name: Allow ICMP
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: icmp
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  notify: Save Firewall Rules
+
+- name: Allow SSH
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: 22
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  notify: Save Firewall Rules
+
+# IPv6 Base Rules
+- name: Allow related and established connections (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  notify: Save IPv6 Firewall Rules
+
+- name: Allow loopback traffic (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    in_interface: lo
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  notify: Save IPv6 Firewall Rules
+
+- name: Allow ICMPv6
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: ipv6-icmp
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  notify: Save IPv6 Firewall Rules
+
+- name: Allow SSH (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: tcp
+    destination_port: 22
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  notify: Save IPv6 Firewall Rules

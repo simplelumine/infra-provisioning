@@ -1,3 +1,8 @@
 ---
-- name: Reload Firewall
-  command: netfilter-persistent reload
+- name: Save Firewall Rules
+  shell: iptables-save > /etc/iptables/rules.v4
+  listen: Save Firewall Rules
+
+- name: Save IPv6 Firewall Rules
+  shell: ip6tables-save > /etc/iptables/rules.v6
+  listen: Save IPv6 Firewall Rules

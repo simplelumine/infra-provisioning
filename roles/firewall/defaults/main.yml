@@ -1,0 +1,34 @@
+---
+# Firewall Defaults
+
+# Enable/Disable features
+firewall_enable_ingress: true
+firewall_enable_tailscale_trust: true
+firewall_enable_xray: true
+firewall_enable_cluster_trust: false
+firewall_enable_nodeports: false
+
+# Tailscale
+tailscale_peer_relay_port: 0
+tailscale_derp_enabled: false
+tailscale_derp_stun_port: 3478
+
+# Xray
+xray_port_tcp: 10000
+
+# Allowed TCP Ports (Kubernetes, Etcd, Cilium)
+# Only applied if firewall_enable_cluster_trust is true
+firewall_allowed_tcp_ports:
+  - 6443   # Kubernetes API
+  - 2379   # Etcd Client
+  - 2380   # Etcd Peer
+  - 10250  # Kubelet Metrics
+  - 4240   # Cilium Health
+  - 4244   # Cilium Hubble
+
+# Allowed UDP Ports (Cilium, WireGuard)
+# Only applied if firewall_enable_cluster_trust is true
+firewall_allowed_udp_ports:
+  - 8472   # VXLAN (Cilium/Flannel)
+  - 51871  # WireGuard
+  # - 6081   # Geneve (Cilium)
