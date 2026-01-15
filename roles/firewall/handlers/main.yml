@@ -1,3 +1,4 @@
 ---
-- name: Reload Firewall
-  command: netfilter-persistent reload
+- name: Apply Firewall Rules
+  shell: iptables-restore --noflush < /etc/iptables/rules.v4
+  listen: Apply Firewall Rules

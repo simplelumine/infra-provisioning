@@ -6,17 +6,32 @@
       - netfilter-persistent
     state: present
 
-- name: Deploy iptables rules (Data-Driven)
+- name: Deploy iptables rules (ANSIBLE-FW chain)
   template:
     src: rules.v4.j2
     dest: /etc/iptables/rules.v4
-  notify: Reload Firewall
+  notify: Apply Firewall Rules
 
-- name: Deploy ip6tables rules (Data-Driven)
+- name: Deploy ip6tables rules
   template:
     src: rules.v6.j2
     dest: /etc/iptables/rules.v6
-  notify: Reload Firewall
+
+- name: Ensure ANSIBLE-FW chain exists
+  command: iptables -N ANSIBLE-FW
+  register: chain_create
+  failed_when: false
+  changed_when: chain_create.rc == 0
+
+- name: Check if INPUT has ANSIBLE-FW jump
+  command: iptables -C INPUT -j ANSIBLE-FW
+  register: jump_check
+  failed_when: false
+  changed_when: false
+
+- name: Add INPUT jump to ANSIBLE-FW (at end of chain)
+  command: iptables -A INPUT -j ANSIBLE-FW
+  when: jump_check.rc != 0
 
 - name: Enable netfilter-persistent
   service:
