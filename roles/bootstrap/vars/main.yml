@@ -1,0 +1,10 @@
+---
+upgrade_paths:
+  '11':
+    current_codename: 'bullseye'
+    next_codename: 'bookworm'
+    next_version: '12'
+  '12':
+    current_codename: 'bookworm'
+    next_codename: 'trixie'
+    next_version: '13'

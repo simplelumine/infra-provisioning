@@ -29,13 +29,10 @@
     fstype: bpf
     state: mounted
 
-- name: Install Longhorn/Storage dependencies
+- name: Install Storage dependencies (SeaweedFS CSI)
   apt:
     name:
-      - open-iscsi
-      - nfs-common
-      - cryptsetup
-      - dmsetup
       - fuse
+      - cryptsetup # Optional: Uncomment to enable volume encryption
     state: present
     update_cache: true

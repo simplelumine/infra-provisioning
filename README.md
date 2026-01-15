@@ -84,6 +84,9 @@ export TARGET=HOST
 
 ansible $TARGET -i inventory/bootstrap.ini -m ping
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -v
+
+ansible all -i inventory/bootstrap.ini -m ping
+ansible-playbook bootstrap.yml -i inventory/bootstrap.ini -v
 ```
 
 ## Phase 2: Full Site Provisioning

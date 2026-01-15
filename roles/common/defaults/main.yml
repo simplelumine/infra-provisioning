@@ -1,3 +1,6 @@
 ---
 system_swap_enabled: true
 swap_file_path: /swapfile
+
+# Default variable to control system updates
+system_upgrade: false

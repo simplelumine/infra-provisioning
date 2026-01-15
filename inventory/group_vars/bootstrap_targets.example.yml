@@ -1,0 +1,3 @@
+---
+# Bootstrap targets MUST be accessed as root initially
+ansible_user: root

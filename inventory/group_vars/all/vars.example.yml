@@ -1,6 +1,10 @@
 ---
 admin_user:
 
+# Ansible Connection Defaults
+ansible_user: "{{ admin_user }}"
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
 # --- Xray Configuration ---
 xray_port_tcp:
 xray_private_key: "{{ vault_xray_private_key }}"

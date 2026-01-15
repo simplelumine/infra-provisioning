@@ -3,8 +3,6 @@
   hosts: all
   become: true
   gather_facts: false # Might fail if python is missing, we install it first
-  vars_files:
-    - inventory/group_vars/all/vars.yml
 
   roles:
     - bootstrap
