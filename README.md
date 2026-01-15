@@ -94,10 +94,7 @@ ansible-playbook bootstrap.yml -i inventory/bootstrap.ini -v
 ```bash
 export TARGET=HOST
 
-ansible $TARGET -i inventory/hosts.ini -m ping
-ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET -v
-
-# other
-ansible-playbook site.yml -i inventory/hosts.ini --limit $TARGET -vvv 
-ansible-playbook site.yml -i inventory/hosts.ini -l $TARGET --tags caddy
+ansible $TARGET -i inventory/<name>.ini -m ping
+ansible-playbook site.yml -i inventory/<name>.ini --limit $TARGET -v
+ansible-playbook site.yml -i inventory/<name>.ini -v
 ```

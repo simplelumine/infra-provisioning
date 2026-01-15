@@ -36,3 +36,16 @@
       - cryptsetup # Optional: Uncomment to enable volume encryption
     state: present
     update_cache: true
+
+# Populate /etc/hosts with cluster node public IPs
+# This ensures K3s nodes communicate via public IP, not Tailscale MagicDNS
+- name: Add cluster nodes to /etc/hosts
+  blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED - K3S CLUSTER NODES"
+    block: |
+      {% for host in groups['cluster'] | default([]) %}
+      {% if hostvars[host]['ansible_host'] is defined %}
+      {{ hostvars[host]['ansible_host'] }} {{ host }}
+      {% endif %}
+      {% endfor %}

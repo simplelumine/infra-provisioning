@@ -16,15 +16,6 @@
     - caddy
     - derp
 
-- name: Configure Sandbox Nodes (Testing Only)
-  hosts: sandbox
-  become: true
-  gather_facts: true
-  roles:
-    - tailscale
-    - xray
-    - firewall
-
 - name: Configure Control Plane
   hosts: control_plane
   become: true
@@ -47,3 +38,12 @@
     - firewall
     - k8s_prereqs
     - k3s_worker
+
+- name: Configure Sandbox Nodes (Testing Only)
+  hosts: sandbox
+  become: true
+  gather_facts: true
+  roles:
+    - tailscale
+    - xray
+    - firewall
