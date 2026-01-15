@@ -1,0 +1,14 @@
+---
+- name: Allow HTTP/HTTPS Ingress
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  loop:
+    - 80
+    - 443
+  when: firewall_enable_ingress | bool
+  notify: Save Firewall Rules

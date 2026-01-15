@@ -1,0 +1,46 @@
+---
+- name: Allow standard Kubernetes TCP ports
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  loop: "{{ firewall_allowed_tcp_ports }}"
+  when: firewall_enable_cluster_trust | bool
+  notify: Save Firewall Rules
+
+- name: Allow standard Kubernetes UDP ports
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: udp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  loop: "{{ firewall_allowed_udp_ports }}"
+  when: firewall_enable_cluster_trust | bool
+  notify: Save Firewall Rules
+
+- name: Allow NodePorts (TCP)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: 30000:32767
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_nodeports | bool
+  notify: Save Firewall Rules
+
+- name: Allow NodePorts (UDP)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: udp
+    destination_port: 30000:32767
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_nodeports | bool
+  notify: Save Firewall Rules

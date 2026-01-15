@@ -1,0 +1,11 @@
+---
+- name: Allow Xray Service
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: "{{ xray_port_tcp }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_xray | bool
+  notify: Save Firewall Rules
