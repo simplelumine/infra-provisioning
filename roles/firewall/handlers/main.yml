@@ -2,3 +2,7 @@
 - name: Apply Firewall Rules
   shell: iptables-restore --noflush < /etc/iptables/rules.v4
   listen: Apply Firewall Rules
+
+- name: Apply IPv6 Firewall Rules
+  shell: ip6tables-restore --noflush < /etc/iptables/rules.v6
+  listen: Apply IPv6 Firewall Rules

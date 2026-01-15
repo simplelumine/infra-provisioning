@@ -1,28 +1,36 @@
 *filter
-:INPUT DROP [0:0]
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
 
+# Custom chain managed by Ansible (does not affect Cilium/Tailscale)
+:ANSIBLE-FW6 - [0:0]
+
 # 1. Base Rules (Always Active)
--A INPUT -i lo -j ACCEPT
--A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
--A INPUT -p ipv6-icmp -j ACCEPT
--A INPUT -p tcp --dport 22 -j ACCEPT
+-A ANSIBLE-FW6 -i lo -j ACCEPT
+-A ANSIBLE-FW6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A ANSIBLE-FW6 -p ipv6-icmp -j ACCEPT
+-A ANSIBLE-FW6 -p tcp --dport 22 -j ACCEPT
 
 # 2. Tailscale Trust Zone
 {% if firewall_enable_tailscale_trust | default(false) %}
--A INPUT -i tailscale0 -j ACCEPT
+-A ANSIBLE-FW6 -i tailscale0 -j ACCEPT
 {% endif %}
 
 # 3. Standard Ingress (HTTP/HTTPS)
 {% if firewall_enable_ingress | default(false) %}
--A INPUT -p tcp --dport 80 -j ACCEPT
--A INPUT -p tcp --dport 443 -j ACCEPT
+-A ANSIBLE-FW6 -p tcp --dport 80 -j ACCEPT
+-A ANSIBLE-FW6 -p tcp --dport 443 -j ACCEPT
 {% endif %}
 
 # 4. Xray Service (Dynamic Port)
 {% if firewall_enable_xray | default(false) %}
--A INPUT -p tcp --dport {{ xray_port_tcp }} -j ACCEPT
+-A ANSIBLE-FW6 -p tcp --dport {{ xray_port_tcp }} -j ACCEPT
 {% endif %}
+
+# 5. Default DROP (anything not matched above)
+-A ANSIBLE-FW6 -j DROP
+
+# Jump from INPUT to our chain (persists after reboot)
+-A INPUT -j ANSIBLE-FW6
 
 COMMIT
