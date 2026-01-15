@@ -20,3 +20,11 @@
     --kubelet-arg="fail-swap-on=false"
   args:
     creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+
+- name: Label Worker Node with Role
+  command: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=worker --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: label_result
+  changed_when: "'not labeled' not in label_result.stdout"

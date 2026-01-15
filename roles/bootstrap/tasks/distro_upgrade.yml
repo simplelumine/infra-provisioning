@@ -1,45 +1,54 @@
 ---
-- name: Gather system facts
+# Generic Recursive Upgrade Logic
+
+# 1. Gather/Refresh Facts (Essential for recursion)
+- name: Gather system facts for upgrade check
   setup:
 
-- name: Check if system is Debian 12 (Bookworm)
+# 2. Check if we have a defined path for the current version
+- name: Check for available upgrade path
   set_fact:
-    needs_distro_upgrade: "{{ ansible_distribution == 'Debian' and ansible_distribution_major_version == '12' }}"
+    upgrade_target: "{{ upgrade_paths[ansible_distribution_major_version] | default({}) }}"
 
-- name: Perform Debian 12 to 13 Upgrade
+- name: Debug upgrade info
+  debug:
+    msg: "Current Debian Version: {{ ansible_distribution_major_version }}. Upgrade Target: {{ upgrade_target.next_version | default('None') }}"
+
+# 3. Perform Upgrade Block (Only if target exists)
+- name: "Perform Debian {{ ansible_distribution_major_version }} to {{ upgrade_target.next_version | default('N/A') }} Upgrade"
   block:
-    - name: Update current system (Bookworm)
+    - name: "Update current system ({{ upgrade_target.current_codename | default('N/A') }})"
       apt:
         update_cache: yes
         upgrade: dist
-      register: bookworm_update
+      register: current_dist_update
 
-    - name: Switch APT sources from Bookworm to Trixie (main)
+    - name: "Switch APT sources from {{ upgrade_target.current_codename | default('N/A') }} to {{ upgrade_target.next_codename | default('N/A') }} (main)"
       replace:
         path: /etc/apt/sources.list
-        regexp: 'bookworm'
-        replace: 'trixie'
+        regexp: "{{ upgrade_target.current_codename }}"
+        replace: "{{ upgrade_target.next_codename }}"
         backup: yes
       ignore_errors: yes
 
-    - name: Find additional APT source files
+    - name: "Find additional APT source files"
       find:
         paths: /etc/apt/sources.list.d
         patterns:
           - '*.list'
           - '*.sources'
-      register: apt_source_files
+      register: additional_sources
 
-    - name: Switch APT sources from Bookworm to Trixie (sources.list.d)
+    - name: "Switch APT sources from {{ upgrade_target.current_codename | default('N/A') }} to {{ upgrade_target.next_codename | default('N/A') }} (sources.list.d)"
       replace:
         path: "{{ item.path }}"
-        regexp: 'bookworm'
-        replace: 'trixie'
+        regexp: "{{ upgrade_target.current_codename }}"
+        replace: "{{ upgrade_target.next_codename }}"
         backup: yes
-      loop: "{{ apt_source_files.files }}"
-      when: apt_source_files.files | length > 0
+      loop: "{{ additional_sources.files }}"
+      when: additional_sources.files | length > 0
 
-    - name: Perform Full Distribution Upgrade (Trixie)
+    - name: "Perform Full Distribution Upgrade (to {{ upgrade_target.next_codename | default('N/A') }})"
       apt:
         upgrade: dist
         update_cache: yes
@@ -47,7 +56,7 @@
       environment:
         DEBIAN_FRONTEND: noninteractive
 
-    - name: Remove orphaned packages
+    - name: Remove orphaned packages (Cleanup)
       apt:
         autoremove: yes
         purge: yes
@@ -56,16 +65,18 @@
       set_fact:
         ansible_python_interpreter: /usr/bin/python3
 
-    - name: Reboot to load new kernel
+    - name: "Reboot to load new kernel ({{ upgrade_target.next_codename | default('N/A') }})"
       reboot:
-        msg: "Rebooting system after upgrading to Debian 13 (Trixie)"
+        msg: "Rebooting system after upgrading to Debian {{ upgrade_target.next_version }}"
         connect_timeout: 5
         reboot_timeout: 600
         pre_reboot_delay: 0
-        post_reboot_delay: 30
+        post_reboot_delay: 45
         test_command: cat /etc/debian_version
 
-    - name: Refresh Ansible Facts
-      setup:
+    # RECURSION: Include this file again to check if another upgrade is needed
+    # Note: We must use include_tasks, not import_tasks, for recursion.
+    - name: Check for further upgrades (Recursion)
+      include_tasks: distro_upgrade.yml
 
-  when: needs_distro_upgrade
+  when: upgrade_target.next_version is defined
