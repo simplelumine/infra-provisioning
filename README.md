@@ -77,8 +77,6 @@ ansible-playbook -i inventory/hosts.ini site.yml
 
 ### Quick Command Reference (Cheat Sheet)
 
-## Phase 1: Bootstrap (Initial Setup)
-
 ```bash
 export TARGET=HOST
 
@@ -87,14 +85,10 @@ ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -v
 
 ansible all -i inventory/bootstrap.ini -m ping
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini -v
-```
-
-## Phase 2: Full Site Provisioning
-
-```bash
-export TARGET=HOST
 
 ansible $TARGET -i inventory/<name>.ini -m ping
 ansible-playbook site.yml -i inventory/<name>.ini --limit $TARGET -v
+
+ansible all -i inventory/<name>.ini -m ping
 ansible-playbook site.yml -i inventory/<name>.ini -v
 ```
