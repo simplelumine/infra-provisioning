@@ -44,3 +44,14 @@
     ip_version: ipv4
   when: firewall_enable_nodeports | bool
   notify: Save Firewall Rules
+
+- name: Allow Monitoring Ports (Node Exporter)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  loop: "{{ firewall_allowed_monitoring_ports }}"
+  notify: Save Firewall Rules
