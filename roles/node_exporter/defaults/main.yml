@@ -1,0 +1,9 @@
+---
+monitoring_enable_node_exporter: false
+node_exporter_version: "1.10.2"
+node_exporter_user: "node_exporter"
+node_exporter_group: "node_exporter"
+node_exporter_port: 9100
+node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_archive }}"
+node_exporter_install_dir: "/usr/local/bin"

@@ -15,6 +15,7 @@
     - xray
     - caddy
     - derp
+    - node_exporter
 
 - name: Configure Control Plane
   hosts: control_plane
