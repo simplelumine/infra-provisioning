@@ -24,7 +24,8 @@ firewall_allowed_tcp_ports:
   - 2380   # Etcd Peer
   - 10250  # Kubelet Metrics
   - 4240   # Cilium Health
-  - 4244   # Cilium Hubble
+  - 4244   # Cilium Hubble Server
+  - 4245   # Cilium Hubble Relay
 
 # Allowed UDP Ports (Cilium, WireGuard)
 # Only applied if firewall_enable_cluster_trust is true

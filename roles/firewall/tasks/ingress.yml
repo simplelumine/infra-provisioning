@@ -12,3 +12,17 @@
     - 443
   when: firewall_enable_ingress | bool
   notify: Save Firewall Rules
+
+- name: Allow HTTP/HTTPS Ingress (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  loop:
+    - 80
+    - 443
+  when: firewall_enable_ingress | bool
+  notify: Save IPv6 Firewall Rules

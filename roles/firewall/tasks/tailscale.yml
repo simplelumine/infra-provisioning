@@ -9,6 +9,16 @@
   when: firewall_enable_tailscale_trust | bool
   notify: Save Firewall Rules
 
+- name: Allow Tailscale Trust Zone (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    in_interface: tailscale0
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  when: firewall_enable_tailscale_trust | bool
+  notify: Save IPv6 Firewall Rules
+
 - name: Allow Tailscale Peer Relay
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
@@ -20,6 +30,17 @@
   when: tailscale_enable_peer_relay | default(false) | bool
   notify: Save Firewall Rules
 
+- name: Allow Tailscale Peer Relay (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: udp
+    destination_port: "{{ tailscale_peer_relay_port }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  when: tailscale_enable_peer_relay | default(false) | bool
+  notify: Save IPv6 Firewall Rules
+
 - name: Allow Tailscale DERP STUN
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
@@ -30,3 +51,14 @@
     ip_version: ipv4
   when: tailscale_derp_enabled | default(false) | bool
   notify: Save Firewall Rules
+
+- name: Allow Tailscale DERP STUN (IPv6)
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: udp
+    destination_port: "{{ tailscale_derp_stun_port }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+  when: tailscale_derp_enabled | default(false) | bool
+  notify: Save IPv6 Firewall Rules
