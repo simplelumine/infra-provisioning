@@ -93,4 +93,5 @@ ansible all -i inventory/<name>.ini -m ping
 ansible-playbook site.yml -i inventory/<name>.ini -v
 
 ansible-playbook site.yml -i inventory/edge.ini --limit $TARGET --start-at-task="<jobs>" -v
+ansible-playbook site.yml -i inventory/edge.ini --tags "firewall,xray" --limit $TARGET -v
 ```

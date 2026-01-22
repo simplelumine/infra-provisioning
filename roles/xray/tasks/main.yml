@@ -23,3 +23,6 @@
     name: xray
     state: started
     enabled: true
+
+- name: Force immediate handler execution
+  meta: flush_handlers
