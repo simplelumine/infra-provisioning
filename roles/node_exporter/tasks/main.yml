@@ -52,3 +52,6 @@
         state: started
         enabled: true
   when: monitoring_enable_node_exporter | default(false) | bool
+
+- name: Force immediate handler execution
+  meta: flush_handlers

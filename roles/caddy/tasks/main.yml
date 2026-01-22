@@ -70,3 +70,6 @@
     name: caddy
     state: started
     enabled: yes
+
+- name: Force immediate handler execution
+  meta: flush_handlers

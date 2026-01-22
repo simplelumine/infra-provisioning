@@ -3,48 +3,69 @@
   become: true
   gather_facts: true
   roles:
-    - common
+    - role: common
+      tags: common
 
 - name: Configure Edge Nodes
   hosts: edge
   become: true
   gather_facts: true
   roles:
-    - tailscale
-    - firewall
-    - xray
-    - caddy
-    - derp
-    - node_exporter
+    - role: tailscale
+      tags: tailscale
+    - role: firewall
+      tags: firewall
+    - role: xray
+      tags: xray
+    - role: caddy
+      tags: caddy
+    - role: derp
+      tags: derp
+    - role: node_exporter
+      tags: node_exporter
 
 - name: Configure Control Plane
   hosts: control_plane
   become: true
   gather_facts: true
   roles:
-    - tailscale
-    - xray
-    - firewall
-    - k8s_prereqs
-    - k3s_control
-    - cilium
+    - role: tailscale
+      tags: tailscale
+    - role: xray
+      tags: xray
+    - role: firewall
+      tags: firewall
+    - role: k8s_prereqs
+      tags: k8s_prereqs
+    - role: k3s_control
+      tags: k3s_control
+    - role: cilium
+      tags: cilium
 
 - name: Configure Worker Nodes
   hosts: worker_nodes
   become: true
   gather_facts: true
   roles:
-    - tailscale
-    - xray
-    - firewall
-    - k8s_prereqs
-    - k3s_worker
+    - role: tailscale
+      tags: tailscale
+    - role: xray
+      tags: xray
+    - role: firewall
+      tags: firewall
+    - role: k8s_prereqs
+      tags: k8s_prereqs
+    - role: k3s_worker
+      tags: k3s_worker
 
 - name: Configure Sandbox Nodes (Testing Only)
   hosts: sandbox
   become: true
   gather_facts: true
   roles:
-    - tailscale
-    - xray
-    - firewall
+    - role: tailscale
+      tags: tailscale
+    - role: xray
+      tags: xray
+    - role: firewall
+      tags: firewall
