@@ -3,3 +3,6 @@ xray_port_tcp: ""  # Must be defined in group_vars
 xray_clients: []
 xray_host_clients: []  # Per-host clients (optional, merged with global)
 xray_private_key: ""  # Must be defined in group_vars or secrets
+
+# Relay Rules (List of objects with listen, target_addr, target_port)
+xray_relay_rules: []
