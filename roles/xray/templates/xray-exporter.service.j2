@@ -1,0 +1,13 @@
+[Unit]
+Description=Xray Exporter
+After=network.target xray.service
+Wants=xray.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/xray-exporter -address 127.0.0.1:{{ xray_api_port }} -port {{ xray_exporter_port }}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

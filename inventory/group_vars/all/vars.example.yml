@@ -11,6 +11,8 @@ ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev
 
 # --- Xray Configuration ---
 xray_port_tcp:
+xray_api_port:
+xray_exporter_port:
 xray_private_key: "{{ vault_xray_private_key }}"
 
 xray_clients:

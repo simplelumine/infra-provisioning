@@ -23,6 +23,15 @@
   },
   "inbounds": [
     {
+      "listen": "127.0.0.1",
+      "port": {{ xray_api_port }},
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      },
+      "tag": "api"
+    },
+    {
       "listen": "0.0.0.0",
       "port": {{ xray_port_tcp }},
       "protocol": "vless",
@@ -85,6 +94,11 @@
   ],
   "routing": {
     "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["api"],
+        "outboundTag": "api"
+      },
       {% if xray_relay_rules is defined and xray_relay_rules | length > 0 %}
       {% for rule in xray_relay_rules %}
       {

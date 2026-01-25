@@ -18,6 +18,26 @@
     mode: '0644'
   notify: Restart Xray
 
+- name: Install Xray Exporter
+  shell: |
+    curl -L -o /usr/local/bin/xray-exporter https://github.com/teddysun/xray-exporter/releases/download/v1.0.0/xray-exporter_linux_amd64
+    chmod +x /usr/local/bin/xray-exporter
+  args:
+    creates: /usr/local/bin/xray-exporter
+
+- name: Configure Xray Exporter Service
+  template:
+    src: xray-exporter.service.j2
+    dest: /etc/systemd/system/xray-exporter.service
+    mode: '0644'
+  notify: Restart Xray Exporter
+
+- name: Ensure Xray Exporter is running
+  service:
+    name: xray-exporter
+    state: started
+    enabled: true
+
 - name: Ensure Xray is running
   service:
     name: xray

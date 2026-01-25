@@ -59,3 +59,18 @@
     - firewall_enable_cluster_trust | bool
     - hostvars[item].ansible_host is defined
   notify: Save Firewall Rules
+
+- name: Allow Xray Exporter (TCP 9550) from cluster nodes
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: tcp
+    destination_port: "{{ xray_exporter_port }}"
+    source: "{{ hostvars[item].ansible_host }}"
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  loop: "{{ groups['cluster'] }}"
+  when: 
+    - firewall_enable_cluster_trust | bool
+    - hostvars[item].ansible_host is defined
+  notify: Save Firewall Rules

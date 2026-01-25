@@ -3,3 +3,9 @@
   service:
     name: xray
     state: restarted
+
+- name: Restart Xray Exporter
+  systemd:
+    name: xray-exporter
+    state: restarted
+    daemon_reload: true
