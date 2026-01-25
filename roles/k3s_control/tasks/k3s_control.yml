@@ -67,7 +67,7 @@
   delegate_to: localhost
   become: false
   file:
-    path: "{{ playbook_dir }}/../.kube"
+    path: "{{ playbook_dir }}/.kube"
     state: directory
     mode: '0755'
   run_once: true
@@ -76,7 +76,7 @@
   delegate_to: localhost
   become: false
   copy:
-    content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', tailscale_ip_output.stdout | trim) }}"
-    dest: "{{ playbook_dir }}/../.kube/{{ k3s_leader_host }}-config"
+    content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', ansible_host) }}"
+    dest: "{{ playbook_dir }}/.kube/config"
     mode: '0600'
   when: inventory_hostname == k3s_leader_host
