@@ -19,9 +19,10 @@
   notify: Restart Xray
 
 - name: Install Xray Exporter
-  shell: |
-    curl -L -o /usr/local/bin/xray-exporter https://github.com/teddysun/xray-exporter/releases/download/v1.0.0/xray-exporter_linux_amd64
-    chmod +x /usr/local/bin/xray-exporter
+  ansible.builtin.get_url:
+    url: "https://github.com/wi1dcard/v2ray-exporter/releases/download/v0.6.0/v2ray-exporter_linux_amd64"
+    dest: /usr/local/bin/xray-exporter
+    mode: '0755'
   args:
     creates: /usr/local/bin/xray-exporter
 

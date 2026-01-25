@@ -15,6 +15,7 @@ tailscale_derp_stun_port: 3478
 
 # Xray
 xray_port_tcp: 10000
+xray_exporter_port: 9550
 
 # Allowed TCP Ports (Kubernetes, Etcd, Cilium)
 # Only applied if firewall_enable_cluster_trust is true
