@@ -17,20 +17,22 @@ tailscale_derp_stun_port: 3478
 xray_port_tcp: 10000
 xray_exporter_port: 9550
 
-# Allowed TCP Ports (Kubernetes, Etcd, Cilium)
+# Allowed TCP Ports (Kubernetes)
 # Only applied if firewall_enable_cluster_trust is true
 firewall_allowed_tcp_ports:
   - 6443   # Kubernetes API
-  - 2379   # Etcd Client
-  - 2380   # Etcd Peer
   - 10250  # Kubelet Metrics
-  - 4240   # Cilium Health
-  - 4244   # Cilium Hubble Server
-  - 4245   # Cilium Hubble Relay
+  # - 2379   # Etcd Client
+  # - 2380   # Etcd Peer
+  # - 4240   # Cilium Health
+  # - 4244   # Cilium Hubble Server
+  # - 4245   # Cilium Hubble Relay
 
-# Allowed UDP Ports (Cilium, WireGuard)
+# Allowed UDP Ports (Flannel WireGuard)
 # Only applied if firewall_enable_cluster_trust is true
 firewall_allowed_udp_ports:
-  - 8472   # VXLAN (Cilium/Flannel)
-  - 51871  # WireGuard
+  - 51820  # Flannel WireGuard Native
+  # - 8472   # VXLAN (Flannel Default - Not used with WireGuard)
+  # - 51871  # Old WireGuard Port
   # - 6081   # Geneve (Cilium)
+

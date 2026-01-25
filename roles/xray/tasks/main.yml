@@ -18,13 +18,22 @@
     mode: '0644'
   notify: Restart Xray
 
-- name: Install Xray Exporter
+- name: Install Xray Exporter - Download to tmp
   ansible.builtin.get_url:
-    url: "https://github.com/wi1dcard/v2ray-exporter/releases/download/v0.6.0/v2ray-exporter_linux_amd64"
-    dest: /usr/local/bin/xray-exporter
+    url: "{{ xray_exporter_download_url }}"
+    dest: "/tmp/{{ xray_exporter_binary }}"
+    mode: '0644'
+  register: download_xray_exporter
+
+- name: Install Xray Exporter - Copy to install dir
+  ansible.builtin.copy:
+    src: "/tmp/{{ xray_exporter_binary }}"
+    dest: "{{ xray_exporter_install_dir }}/xray-exporter"
     mode: '0755'
-  args:
-    creates: /usr/local/bin/xray-exporter
+    owner: nobody
+    group: nogroup
+    remote_src: true
+  notify: Restart Xray Exporter
 
 - name: Configure Xray Exporter Service
   template:

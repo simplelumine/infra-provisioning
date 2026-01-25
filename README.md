@@ -84,7 +84,7 @@ export TARGET=target-node-id
 
 # --- Phase 1: Bootstrap (Root Access) ---
 # Check connectivity
-ansible $TARGET -i inventory/bootstrap.ini -m ping
+ansible all -i inventory/bootstrap.ini -m ping
 
 # Run bootstrap for a single host
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -v

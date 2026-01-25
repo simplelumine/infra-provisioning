@@ -1,0 +1,78 @@
+---
+- name: Check if Leader Host is Defined
+  fail:
+    msg: "k3s_leader_host variable must be defined in group_vars"
+  when: k3s_leader_host is not defined
+
+- name: Retrieve K3s Token from Leader (Followers only)
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: leader_token_raw
+  delegate_to: "{{ k3s_leader_host }}"
+  run_once: true
+  when: inventory_hostname != k3s_leader_host
+
+- name: Set Token Fact (Followers only)
+  set_fact:
+    k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
+  when: inventory_hostname != k3s_leader_host
+
+- name: Get Tailscale IP
+  command: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+
+- name: Define K3s Installation Args
+  set_fact:
+    k3s_mode_args: >-
+      {%- if inventory_hostname == k3s_leader_host -%}
+        {%- if k3s_etcd_mode | bool -%}
+          --cluster-init
+        {%- endif -%}
+      {%- else -%}
+        --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
+      {%- endif -%}
+
+- name: Install K3s Server (Master)
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
+    {{ k3s_mode_args }} \
+    --node-external-ip {{ ansible_host }} \
+    --flannel-backend=wireguard-native \
+    --flannel-external-ip \
+    --kubelet-arg="fail-swap-on=false" \
+    --tls-san {{ ansible_host }} \
+    --tls-san {{ inventory_hostname }} \
+    --tls-san {{ tailscale_ip_output.stdout | trim }}
+  args:
+    creates: /var/lib/rancher/k3s/server/node-token
+
+- name: Retrieve K3s Kubeconfig (Leader Only)
+  slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_kubeconfig_base64
+  when: inventory_hostname == k3s_leader_host
+
+- name: Get Tailscale IP from Leader (Leader Only)
+  command: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+  when: inventory_hostname == k3s_leader_host
+
+- name: Create local .kube directory
+  delegate_to: localhost
+  become: false
+  file:
+    path: "{{ playbook_dir }}/.kube"
+    state: directory
+    mode: '0755'
+  run_once: true
+
+- name: Save Kubeconfig locally
+  delegate_to: localhost
+  become: false
+  copy:
+    content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', ansible_host) }}"
+    dest: "{{ playbook_dir }}/.kube/config"
+    mode: '0600'
+  when: inventory_hostname == k3s_leader_host
