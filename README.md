@@ -2,7 +2,7 @@
 
 This repository contains the **Ansible Playbooks** used to bootstrap and manage the multi-cloud Kubernetes infrastructure for **Simple Lumine**. It automates the entire lifecycle: from bare-metal initialization and security hardening to Kubernetes (K3s) clustering and Edge acceleration.
 
-## 🏗 Architecture (Updated 2025-12)
+## 🏗 Architecture
 
 ### Core Cluster (K3s)
 - **Distro**: [K3s](https://k3s.io/) (Lightweight Kubernetes).
@@ -12,86 +12,103 @@ This repository contains the **Ansible Playbooks** used to bootstrap and manage 
 - **Control Plane**: Deterministic Leader election logic verified via `k3s_leader_host` variable.
 
 ### Network & Security
-- **CNI**: [Cilium](https://cilium.io/) configured with:
-    - **VXLAN Overlay**: independent of underlying provider network.
-    - **WireGuard Encryption**: Transparent Node-to-Node encryption.
-- **Management Mesh**: [Tailscale](https://tailscale.com/).
-    - All nodes (WAN/LAN) join a unified Zero Trust mesh.
-    - SSH and Management traffic are restricted to `tailscale0`.
-    - **DERP Relay**: Self-hosted custom DERP server for low-latency mesh connectivity.
-- **Security**: 
-    - **Firewall**: Node-level implementation for rigorous port access control.
+- **CNI**: [Cilium](https://cilium.io/) (VXLAN, WireGuard).
+- **Mesh**: [Tailscale](https://tailscale.com/) for secure node-to-node communication.
+- **Firewall**: `firewall` role manages `iptables` rules.
+- **Proxy**: [Xray](https://github.com/XTLS/Xray-core) for transit and edge routing.
+- **Edge**: [Caddy](https://caddyserver.com/) for HTTP/3 reverse proxying.
 
-### Edge Acceleration Layer
-- **Components**: [Caddy](https://caddyserver.com/) + Xray.
-- **Routing Strategy**: Cloudflare -> Cluster Public IP.
+### Monitoring
+- **Metrics**: `node_exporter` deployed on Edge nodes.
 
 ## 📂 Repository Structure
 
 ```text
 infra-provisioning/
-├── docs/                      # Design Notes & Decisions
 ├── inventory/
-│   ├── hosts.ini              # Consolidated Inventory
-│   └── group_vars/
-│       ├── prod_cluster.yml   # Prod Config (HA=True)
-│       ├── lab_cluster.yml    # Lab Config (HA=False)
-│       └── edge_nodes.yml     # Edge Config
+│   ├── bootstrap.ini          # Initial bootstrapping inventory
+│   ├── cluster.ini            # Main Kubernetes Cluster inventory
+│   ├── edge.ini               # Edge nodes inventory
+│   ├── sandbox.ini            # Testing/Sandbox inventory
+│   └── group_vars/            # Group-specific variables
 ├── roles/
-│   ├── bootstrap/             # Phase 1: OS Upgrade, User Setup, Hardening
-│   ├── common/                # Shared: NTP, Fail2ban, SSHD, Swap
-│   ├── tailscale/             # Management Mesh networking
-│   ├── firewall/              # Node-level firewall configuration
-│   ├── k8s_prereqs/           # Kernel modules & sysctl settings for K8s
-│   ├── k3s_control/           # K3s Server (Control Plane)
-│   ├── k3s_worker/            # K3s Agent (Worker Nodes)
-│   ├── cilium/                # CNI Installation (GitOps/Helm)
-│   ├── caddy/                 # Edge Proxy (HTTP/3)
-│   ├── xray/                  # Transit Proxy
-│   └── derp/                  # Self-hosted Tailscale DERP Server
-├── bootstrap.yml              # Playbook: Initial Setup
-└── site.yml                   # Playbook: Main Provisioning
+│   ├── bootstrap/             # OS Upgrade & Hardening
+│   ├── caddy/                 # Edge Proxy
+│   ├── cilium/                # CNI Installation
+│   ├── common/                # Shared Configs (NTP, users, etc.)
+│   ├── derp/                  # Tailscale DERP Server
+│   ├── docker/                # Docker installation (Optional)
+│   ├── firewall/              # Security Rules
+│   ├── k3s_control/           # K3s Server
+│   ├── k3s_worker/            # K3s Agent
+│   ├── k8s_prereqs/           # Kernel modules & sysctl
+│   ├── node_exporter/         # Prometheus Metrics
+│   ├── tailscale/             # Mesh Networking
+│   └── xray/                  # Transit Proxy
+├── bootstrap.yml              # Initial Setup Playbook
+└── site.yml                   # Main Provisioning Playbook
 ```
 
 ## 🚀 Deployment Guide
 
-### 1. Pre-requisites
-Ensure `inventory/hosts.ini` is populated. See `inventory/hosts.example.ini`.
+### 1. Bootstrap Phase
+Run this only once for new server initialization (create users, secure SSH).
 
-### 2. Configuration
-Adjust `inventory/group_vars` to match your cluster needs:
-- Set `k3s_etcd_mode` in `prod_cluster.yml` or `lab_cluster.yml`.
-- Set `k3s_leader_host` to define the bootstrap node.
-
-### 3. Execution
-
-**Phase 1: Bootstrap** (Runs as root, creates user, locks down SSH)
 ```bash
 ansible-playbook -i inventory/bootstrap.ini bootstrap.yml
 ```
 
-**Phase 2: Provisioning** (Runs as ecosystem user)
+### 2. Provisioning Phase
+Run the main playbook against specific environments.
+
+**Cluster Provisioning:**
 ```bash
-ansible-playbook -i inventory/hosts.ini site.yml
+ansible-playbook -i inventory/cluster.ini site.yml
+```
+
+**Edge Provisioning:**
+```bash
+ansible-playbook -i inventory/edge.ini site.yml
+```
+
+**Sandbox/Test:**
+```bash
+ansible-playbook -i inventory/sandbox.ini site.yml
 ```
 
 ### Quick Command Reference (Cheat Sheet)
 
 ```bash
-export TARGET=HOST
+# Export target host for single-node operations
+export TARGET=target-node-id
 
+# --- Phase 1: Bootstrap (Root Access) ---
+# Check connectivity
 ansible $TARGET -i inventory/bootstrap.ini -m ping
+
+# Run bootstrap for a single host
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini --limit $TARGET -v
 
-ansible all -i inventory/bootstrap.ini -m ping
+# Run bootstrap for ALL new hosts
 ansible-playbook bootstrap.yml -i inventory/bootstrap.ini -v
 
-ansible $TARGET -i inventory/<name>.ini -m ping
-ansible-playbook site.yml -i inventory/<name>.ini --limit $TARGET -v
+# --- Phase 2: Cluster Provisioning ---
+# Check connectivity
+ansible all -i inventory/cluster.ini -m ping
 
-ansible all -i inventory/<name>.ini -m ping
-ansible-playbook site.yml -i inventory/<name>.ini -v
+# Provision all cluster nodes
+ansible-playbook site.yml -i inventory/cluster.ini -v
 
-ansible-playbook site.yml -i inventory/edge.ini --limit $TARGET --start-at-task="<jobs>" -v
-ansible-playbook site.yml -i inventory/edge.ini --tags "firewall" --limit $TARGET -v
+# Provision specific node (e.g. after maintenance)
+ansible-playbook site.yml -i inventory/cluster.ini --limit $TARGET -v
+
+# --- Edge Nodes & Maintenance ---
+# Update Firewall rules only
+ansible-playbook site.yml -i inventory/edge.ini --tags "firewall" -v
+
+# Update Tailscale/Mesh config only
+ansible-playbook site.yml -i inventory/edge.ini --tags "tailscale" -v
+
+# Debugging: Start from a specific task
+ansible-playbook site.yml -i inventory/edge.ini --limit $TARGET --start-at-task="Install Caddy" -v
 ```
