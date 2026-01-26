@@ -98,8 +98,9 @@
         "type": "field",
         "inboundTag": ["api"],
         "outboundTag": "api"
-      },
+      }
       {% if xray_relay_rules is defined and xray_relay_rules | length > 0 %}
+      ,
       {% for rule in xray_relay_rules %}
       {
         "type": "field",
