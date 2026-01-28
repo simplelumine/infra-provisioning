@@ -37,8 +37,10 @@
       tags: firewall
     - role: k8s_prereqs
       tags: k8s_prereqs
-    - role: k3s_control_default
-      tags: k3s_control_default
+    - role: k3s_control_cilium
+      tags: k3s_control_cilium
+    - role: cilium
+      tags: cilium
 
 - name: Configure Worker Nodes
   hosts: worker_nodes
