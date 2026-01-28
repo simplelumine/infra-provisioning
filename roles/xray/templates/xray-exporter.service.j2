@@ -6,7 +6,8 @@ Wants=xray.service
 [Service]
 Type=simple
 User=nobody
-ExecStart=/usr/local/bin/xray-exporter --v2ray-endpoint 127.0.0.1:{{ xray_api_port }} --listen :{{ xray_exporter_port }} --metrics-path /metrics
+RestartSec=5
+ExecStart=/usr/local/bin/xray-exporter --v2ray-endpoint=127.0.0.1:{{ xray_api_port }} --listen=:{{ xray_exporter_port }} --metrics-path=/metrics --scrape-timeout=10
 Restart=on-failure
 
 [Install]
