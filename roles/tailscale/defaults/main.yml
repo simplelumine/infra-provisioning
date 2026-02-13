@@ -1,3 +1,4 @@
 ---
+tailscale_accept_dns: false
 tailscale_enable_peer_relay: false
 tailscale_peer_relay_port: 41641
