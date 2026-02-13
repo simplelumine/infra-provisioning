@@ -1,5 +1,22 @@
 # IPv4 Chain Setup - SAFETY FIRST
-# 1. Allow established connections directly on INPUT (Prevents lockout when flushing custom chain)
+# Strategy: ACCEPT policy → flush INPUT → add safety rules → DROP policy
+# This guarantees a clean INPUT chain with no duplicate rules.
+
+# 1. Temporarily set INPUT policy to ACCEPT (safety net before flush)
+- name: Temporarily set INPUT policy to ACCEPT
+  ansible.builtin.iptables:
+    chain: INPUT
+    policy: ACCEPT
+    ip_version: ipv4
+
+# 2. Flush INPUT chain to remove all existing rules (including duplicates)
+- name: Flush INPUT chain
+  ansible.builtin.iptables:
+    chain: INPUT
+    flush: true
+    ip_version: ipv4
+
+# 3. Add safety rules (fresh, single copy)
 - name: Allow established connections on INPUT
   ansible.builtin.iptables:
     chain: INPUT
@@ -8,7 +25,6 @@
     action: append
     ip_version: ipv4
 
-# 2. Allow SSH directly on INPUT (Safety net)
 - name: Allow SSH on INPUT
   ansible.builtin.iptables:
     chain: INPUT
@@ -18,14 +34,6 @@
     action: append
     ip_version: ipv4
 
-# 3. Apply Default DROP Policy (Now safe because of above rules)
-- name: Set INPUT chain default policy to DROP
-  ansible.builtin.iptables:
-    chain: INPUT
-    policy: DROP
-    ip_version: ipv4
-  notify: Save Firewall Rules
-
 # 4. Manage Custom Chain
 - name: Create ANSIBLE-FW chain
   ansible.builtin.iptables:
@@ -33,20 +41,12 @@
     chain_management: true
     state: present
     ip_version: ipv4
-  notify: Save Firewall Rules
 
 - name: Flush ANSIBLE-FW chain
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
     flush: true
     ip_version: ipv4
-  notify: Save Firewall Rules
-
-- name: Check if INPUT has ANSIBLE-FW jump
-  ansible.builtin.command: iptables -C INPUT -j ANSIBLE-FW
-  register: jump_check
-  failed_when: false
-  changed_when: false
 
 - name: Add INPUT jump to ANSIBLE-FW
   ansible.builtin.iptables:
@@ -54,10 +54,28 @@
     jump: ANSIBLE-FW
     action: append
     ip_version: ipv4
-  when: jump_check.rc != 0
+
+# 5. Now safe to set DROP policy (ESTABLISHED + SSH + ANSIBLE-FW jump are in place)
+- name: Set INPUT chain default policy to DROP
+  ansible.builtin.iptables:
+    chain: INPUT
+    policy: DROP
+    ip_version: ipv4
   notify: Save Firewall Rules
 
-# IPv6 Chain Setup - SAFETY FIRST
+# IPv6 Chain Setup - SAFETY FIRST (same strategy)
+- name: Temporarily set INPUT policy to ACCEPT (IPv6)
+  ansible.builtin.iptables:
+    chain: INPUT
+    policy: ACCEPT
+    ip_version: ipv6
+
+- name: Flush INPUT chain (IPv6)
+  ansible.builtin.iptables:
+    chain: INPUT
+    flush: true
+    ip_version: ipv6
+
 - name: Allow established connections on INPUT (IPv6)
   ansible.builtin.iptables:
     chain: INPUT
@@ -75,33 +93,18 @@
     action: append
     ip_version: ipv6
 
-- name: Set INPUT chain default policy to DROP (IPv6)
-  ansible.builtin.iptables:
-    chain: INPUT
-    policy: DROP
-    ip_version: ipv6
-  notify: Save IPv6 Firewall Rules
-
 - name: Create ANSIBLE-FW6 chain
   ansible.builtin.iptables:
     chain: ANSIBLE-FW6
     chain_management: true
     state: present
     ip_version: ipv6
-  notify: Save IPv6 Firewall Rules
 
 - name: Flush ANSIBLE-FW6 chain
   ansible.builtin.iptables:
     chain: ANSIBLE-FW6
     flush: true
     ip_version: ipv6
-  notify: Save IPv6 Firewall Rules
-
-- name: Check if INPUT has ANSIBLE-FW6 jump (IPv6)
-  ansible.builtin.command: ip6tables -C INPUT -j ANSIBLE-FW6
-  register: jump6_check
-  failed_when: false
-  changed_when: false
 
 - name: Add INPUT jump to ANSIBLE-FW6 (IPv6)
   ansible.builtin.iptables:
@@ -109,5 +112,10 @@
     jump: ANSIBLE-FW6
     action: append
     ip_version: ipv6
-  when: jump6_check.rc != 0
+
+- name: Set INPUT chain default policy to DROP (IPv6)
+  ansible.builtin.iptables:
+    chain: INPUT
+    policy: DROP
+    ip_version: ipv6
   notify: Save IPv6 Firewall Rules
