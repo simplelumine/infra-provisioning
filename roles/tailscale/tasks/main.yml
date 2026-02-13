@@ -39,6 +39,10 @@
   register: tailscale_up
   changed_when: tailscale_up.rc == 0
 
+- name: Configure Tailscale DNS acceptance
+  command: tailscale set --accept-dns={{ tailscale_accept_dns | bool | lower }}
+  changed_when: false
+
 - name: Enable Tailscale Peer Relay
   command: tailscale set --relay-server-port {{ tailscale_peer_relay_port }}
   when: tailscale_enable_peer_relay | default(false)

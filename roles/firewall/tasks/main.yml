@@ -39,6 +39,9 @@
     ip_version: ipv6
   notify: Save IPv6 Firewall Rules
 
+# 7. Save rules to disk immediately
+- meta: flush_handlers
+
 - name: Enable netfilter-persistent
   service:
     name: netfilter-persistent
