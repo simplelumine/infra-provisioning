@@ -1,0 +1,26 @@
+[Unit]
+Description=Tailscale DERP Server for Coder (cde-derp)
+After=network.target
+
+[Service]
+Type=simple
+# cde-derper runs HTTPS on internal port {{ cde_derp_http_port }}
+# It auto-generates a self-signed certificate
+# Caddy proxies https://<cde-derp-domain> -> https://127.0.0.1:{{ cde_derp_http_port }} with tls_insecure_skip_verify
+# And Caddy handles header auth.
+ExecStart={{ cde_derp_dir }}/derper \
+  --hostname={{ cde_derp_hostname }} \
+  -a=:{{ cde_derp_http_port | default(8444) }} \
+  --http-port=-1 \
+  --stun-port={{ cde_derp_stun_port | default(3479) }} \
+{% if cde_derp_verify_clients %}
+  --verify-clients
+{% else %}
+  --verify-clients=false
+{% endif %}
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

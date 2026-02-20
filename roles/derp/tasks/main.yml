@@ -1,4 +1,9 @@
 ---
+# Skip entire role if derp is not enabled
+- name: Skip DERP role if derp is not enabled
+  meta: end_role
+  when: not (tailscale_derp_enabled | default(false))
+
 - name: Create DERP directory
   file:
     path: /opt/derp
@@ -33,6 +38,8 @@
   shell: |
     export PATH=$PATH:/usr/local/go/bin
     export GOPATH=/opt/derp/go
+    export GOTMPDIR=/opt/derp/tmp
+    mkdir -p /opt/derp/tmp
     go install tailscale.com/cmd/derper@latest
     cp /opt/derp/go/bin/derper /opt/derp/derper
   args:

@@ -22,7 +22,10 @@
 # 5. Tailscale Rules
 - import_tasks: tailscale.yml
 
-# 6. Final Drop Rule
+# 6. DERP Rules
+- import_tasks: derp.yml
+
+# 7. Final Drop Rule
 - name: Log and Drop at end of ANSIBLE-FW
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
@@ -39,7 +42,7 @@
     ip_version: ipv6
   notify: Save IPv6 Firewall Rules
 
-# 7. Save rules to disk immediately
+# 8. Save rules to disk immediately
 - meta: flush_handlers
 
 - name: Enable netfilter-persistent
