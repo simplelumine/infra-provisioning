@@ -109,6 +109,9 @@ ansible-playbook site.yml -i inventory/edge.ini --tags "firewall" -v
 # Update Tailscale/Mesh config only
 ansible-playbook site.yml -i inventory/edge.ini --tags "tailscale" -v
 
+# Update Caddy only
+ansible-playbook site.yml -i inventory/edge.ini --tags "caddy" -v
+
 # Debugging: Start from a specific task
 ansible-playbook site.yml -i inventory/edge.ini --limit $TARGET --start-at-task="Install Caddy" -v
 ```
