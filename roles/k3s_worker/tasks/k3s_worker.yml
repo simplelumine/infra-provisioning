@@ -46,3 +46,19 @@
   when: node_tier is defined
   register: tier_role_result
   changed_when: "'not labeled' not in tier_role_result.stdout"
+
+- name: Label Worker Node with Zone (City)
+  command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/zone={{ inventory_hostname[:3] }} --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: zone_label_result
+  changed_when: "'not labeled' not in zone_label_result.stdout"
+
+- name: Label Worker Node with Region
+  command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/region={{ node_region | default('us-west') }} --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: region_label_result
+  changed_when: "'not labeled' not in region_label_result.stdout"
