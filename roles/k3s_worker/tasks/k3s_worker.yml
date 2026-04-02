@@ -28,3 +28,21 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: label_result
   changed_when: "'not labeled' not in label_result.stdout"
+
+- name: Label Worker Node with Tier (Scheduling)
+  command: kubectl label node {{ inventory_hostname }} tier={{ node_tier }} --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  when: node_tier is defined
+  register: tier_label_result
+  changed_when: "'not labeled' not in tier_label_result.stdout"
+
+- name: Label Worker Node with Tier Role (Display)
+  command: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/{{ node_tier }}=true --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  when: node_tier is defined
+  register: tier_role_result
+  changed_when: "'not labeled' not in tier_role_result.stdout"
