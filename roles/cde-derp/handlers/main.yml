@@ -1,7 +1,0 @@
----
-- name: Restart CDE DERP
-  systemd:
-    name: cde-derper
-    state: restarted
-    daemon_reload: yes
-    enabled: yes

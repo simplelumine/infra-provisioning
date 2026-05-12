@@ -4,6 +4,12 @@
     msg: "k3s_leader_host variable must be defined in group_vars"
   when: k3s_leader_host is not defined
 
+- name: Check current K3s version
+  command: k3s --version
+  register: k3s_current_version
+  changed_when: false
+  failed_when: false
+
 - name: Fetch K3s Token from Leader
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
@@ -11,23 +17,16 @@
   register: k3s_token_slurp
   become: true
 
-- name: Install K3s Agent
+- name: Install/Upgrade K3s Agent
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - agent \
     --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 \
     --token {{ k3s_token_slurp.content | b64decode | trim }} \
     --node-external-ip {{ ansible_host }} \
     --kubelet-arg="fail-swap-on=false"
-  args:
-    creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
-
-- name: Label Worker Node with Role
-  command: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=worker --overwrite
-  delegate_to: "{{ k3s_leader_host }}"
-  environment:
-    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-  register: label_result
-  changed_when: "'not labeled' not in label_result.stdout"
+  when: >
+    k3s_current_version.rc != 0 or
+    k3s_install_version not in k3s_current_version.stdout
 
 - name: Label Worker Node with Tier (Scheduling)
   command: kubectl label node {{ inventory_hostname }} tier={{ node_tier }} --overwrite

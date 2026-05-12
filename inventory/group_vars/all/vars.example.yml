@@ -9,6 +9,12 @@ ansible_user: "{{ admin_user }}"
 # For production, manage host keys properly via known_hosts or SSH certificates.
 ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
+# --- SSH Keys ---
+# Public keys to authorize for the admin user.
+# Supports multiple keys for team access or CI/CD.
+admin_ssh_keys:
+  - "ssh-ed25519 AAAA... you@personal"
+
 # --- Xray Configuration ---
 xray_port_tcp:
 xray_api_port:

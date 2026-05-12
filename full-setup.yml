@@ -1,0 +1,10 @@
+---
+# Full Setup — From bare metal to fully configured cluster.
+# Use this for fresh environments. For day-to-day changes, use site.yml directly.
+#
+# Usage:
+#   ansible-playbook full-setup.yml                    # Everything
+#   ansible-playbook full-setup.yml --tags k3s_worker  # Only re-run worker join
+
+- import_playbook: bootstrap.yml
+- import_playbook: site.yml

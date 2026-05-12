@@ -1,7 +1,0 @@
----
-cde_derp_enabled: false
-cde_derp_dir: /opt/cde-derp
-cde_derp_hostname: ""  # e.g., cde-derp.simplelumine.com
-cde_derp_http_port: 8444
-cde_derp_stun_port: 3479
-cde_derp_verify_clients: false

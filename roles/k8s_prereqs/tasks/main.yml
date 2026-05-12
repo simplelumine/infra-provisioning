@@ -29,14 +29,6 @@
     fstype: bpf
     state: mounted
 
-- name: Install Storage dependencies (SeaweedFS CSI)
-  apt:
-    name:
-      - fuse
-      - cryptsetup # Optional: Uncomment to enable volume encryption
-    state: present
-    update_cache: true
-
 # Populate /etc/hosts with cluster node public IPs
 # This ensures K3s nodes communicate via public IP, not Tailscale MagicDNS
 - name: Add cluster nodes to /etc/hosts

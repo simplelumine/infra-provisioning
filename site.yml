@@ -1,22 +1,22 @@
-- name: Apply Base Configuration (Common)
+- name: Apply Base Configuration (All Nodes)
   hosts: all
   become: true
   gather_facts: true
   roles:
     - role: common
       tags: common
+    - role: tailscale
+      tags: tailscale
+    - role: xray
+      tags: xray
+    - role: firewall
+      tags: firewall
 
 - name: Configure Edge Nodes
   hosts: edge
   become: true
   gather_facts: true
   roles:
-    - role: tailscale
-      tags: tailscale
-    - role: firewall
-      tags: firewall
-    - role: xray
-      tags: xray
     - role: caddy
       tags: caddy
     - role: derp
@@ -29,12 +29,6 @@
   become: true
   gather_facts: true
   roles:
-    - role: tailscale
-      tags: tailscale
-    - role: xray
-      tags: xray
-    - role: firewall
-      tags: firewall
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_control_default
@@ -45,25 +39,7 @@
   become: true
   gather_facts: true
   roles:
-    - role: tailscale
-      tags: tailscale
-    - role: xray
-      tags: xray
-    - role: firewall
-      tags: firewall
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_worker
       tags: k3s_worker
-
-- name: Configure Sandbox Nodes (Testing Only)
-  hosts: sandbox
-  become: true
-  gather_facts: true
-  roles:
-    - role: tailscale
-      tags: tailscale
-    - role: xray
-      tags: xray
-    - role: firewall
-      tags: firewall

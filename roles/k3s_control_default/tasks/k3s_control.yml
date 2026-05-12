@@ -4,6 +4,12 @@
     msg: "k3s_leader_host variable must be defined in group_vars"
   when: k3s_leader_host is not defined
 
+- name: Check current K3s version
+  command: k3s --version
+  register: k3s_current_version
+  changed_when: false
+  failed_when: false
+
 - name: Retrieve K3s Token from Leader (Followers only)
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
@@ -17,10 +23,11 @@
     k3s_token: "{{ leader_token_raw.content | b64decode | trim }}"
   when: inventory_hostname != k3s_leader_host
 
-- name: Get Tailscale IP
+- name: Get Tailscale IP (optional)
   command: tailscale ip -4
   register: tailscale_ip_output
   changed_when: false
+  failed_when: false
 
 - name: Define K3s Installation Args
   set_fact:
@@ -33,19 +40,22 @@
         --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
       {%- endif -%}
 
-- name: Install K3s Server (Master)
+- name: Install/Upgrade K3s Server
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
     {{ k3s_mode_args }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-backend=wireguard-native \
     --flannel-external-ip \
+    --disable=traefik \
     --kubelet-arg="fail-swap-on=false" \
     --tls-san {{ ansible_host }} \
-    --tls-san {{ inventory_hostname }} \
-    --tls-san {{ tailscale_ip_output.stdout | trim }}
-  args:
-    creates: /var/lib/rancher/k3s/server/node-token
+    --tls-san {{ inventory_hostname }}{% if tailscale_ip_output.stdout | default('') | trim %} \
+    --tls-san {{ tailscale_ip_output.stdout | trim }}{% endif %}
+
+  when: >
+    k3s_current_version.rc != 0 or
+    k3s_install_version not in k3s_current_version.stdout
 
 - name: Retrieve K3s Kubeconfig (Leader Only)
   slurp:
@@ -63,7 +73,7 @@
   delegate_to: localhost
   become: false
   file:
-    path: "{{ playbook_dir }}/.kube"
+    path: "~/.kube"
     state: directory
     mode: '0755'
   run_once: true
@@ -73,7 +83,7 @@
   become: false
   copy:
     content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', ansible_host) }}"
-    dest: "{{ playbook_dir }}/.kube/config"
+    dest: "~/.kube/config"
     mode: '0600'
   when: inventory_hostname == k3s_leader_host
 
