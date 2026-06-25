@@ -1,7 +1,5 @@
 ---
 xray_port_tcp: ""  # Must be defined in group_vars
-xray_api_port: 10085
-xray_exporter_port: 9550
 xray_clients: []
 xray_host_clients: []  # Per-host clients (optional, merged with global)
 xray_private_key: ""  # Must be defined in group_vars or secrets
@@ -9,9 +7,4 @@ xray_private_key: ""  # Must be defined in group_vars or secrets
 # Relay Rules (List of objects with listen, target_addr, target_port)
 xray_relay_rules: []
 
-# Xray Exporter Configuration
-xray_exporter_version: "0.6.0"
-xray_exporter_binary: "v2ray-exporter_linux_amd64"
-xray_exporter_download_url: "https://github.com/wi1dcard/v2ray-exporter/releases/download/v{{ xray_exporter_version }}/{{ xray_exporter_binary }}"
-xray_exporter_install_dir: "/usr/local/bin"
 

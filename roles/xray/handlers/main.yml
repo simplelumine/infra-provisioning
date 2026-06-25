@@ -4,8 +4,6 @@
     name: xray
     state: restarted
 
-- name: Restart Xray Exporter
+- name: Reload systemd
   systemd:
-    name: xray-exporter
-    state: restarted
     daemon_reload: true

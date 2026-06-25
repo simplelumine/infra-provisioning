@@ -5,11 +5,51 @@
     state: directory
     mode: '0755'
 
-- name: Install Xray
+- name: Install Xray (first time)
   shell: |
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
   args:
     creates: /usr/local/bin/xray
+
+- name: Update Xray to latest version
+  shell: |
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+  register: xray_update_result
+  changed_when: "'installed' in xray_update_result.stdout or 'upgraded' in xray_update_result.stdout"
+  notify: Restart Xray
+
+- name: Deploy Xray auto-update systemd service
+  copy:
+    dest: /etc/systemd/system/xray-update.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Xray Auto Update
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c '"$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install'
+      ExecStartPost=/bin/systemctl restart xray
+  notify: Reload systemd
+
+- name: Deploy Xray auto-update systemd timer
+  copy:
+    dest: /etc/systemd/system/xray-update.timer
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Weekly Xray Auto Update
+
+      [Timer]
+      OnCalendar=weekly
+      RandomizedDelaySec=3600
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+  notify: Reload systemd
 
 - name: Configure Xray
   template:
@@ -18,35 +58,8 @@
     mode: '0644'
   notify: Restart Xray
 
-- name: Install Xray Exporter - Download to tmp
-  ansible.builtin.get_url:
-    url: "{{ xray_exporter_download_url }}"
-    dest: "/tmp/{{ xray_exporter_binary }}"
-    mode: '0644'
-  register: download_xray_exporter
-
-- name: Install Xray Exporter - Copy to install dir
-  ansible.builtin.copy:
-    src: "/tmp/{{ xray_exporter_binary }}"
-    dest: "{{ xray_exporter_install_dir }}/xray-exporter"
-    mode: '0755'
-    owner: nobody
-    group: nogroup
-    remote_src: true
-  notify: Restart Xray Exporter
-
-- name: Configure Xray Exporter Service
-  template:
-    src: xray-exporter.service.j2
-    dest: /etc/systemd/system/xray-exporter.service
-    mode: '0644'
-  notify: Restart Xray Exporter
-
-- name: Ensure Xray Exporter is running
-  service:
-    name: xray-exporter
-    state: started
-    enabled: true
+- name: Force immediate handler execution
+  meta: flush_handlers
 
 - name: Ensure Xray is running
   service:
@@ -54,5 +67,8 @@
     state: started
     enabled: true
 
-- name: Force immediate handler execution
-  meta: flush_handlers
+- name: Enable Xray auto-update timer
+  service:
+    name: xray-update.timer
+    state: started
+    enabled: true
