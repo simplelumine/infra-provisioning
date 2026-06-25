@@ -33,20 +33,26 @@
   set_fact:
     k3s_mode_args: >-
       {%- if inventory_hostname == k3s_leader_host -%}
-        {%- if k3s_etcd_mode | bool -%}
+        {%- if k3s_etcd_mode | default(false) | bool -%}
           --cluster-init
         {%- endif -%}
       {%- else -%}
         --server https://{{ hostvars[k3s_leader_host]['ansible_host'] }}:6443 --token {{ k3s_token }}
       {%- endif -%}
 
+- name: Define K3s Flannel Args
+  set_fact:
+    k3s_flannel_args: >-
+      {%- if k3s_flannel_wireguard | default(false) | bool -%}
+        --flannel-backend=wireguard-native --flannel-external-ip
+      {%- endif -%}
+
 - name: Install/Upgrade K3s Server
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
     {{ k3s_mode_args }} \
+    {{ k3s_flannel_args }} \
     --node-external-ip {{ ansible_host }} \
-    --flannel-backend=wireguard-native \
-    --flannel-external-ip \
     --disable=traefik \
     --kubelet-arg="fail-swap-on=false" \
     --tls-san {{ ansible_host }} \
@@ -61,12 +67,6 @@
   slurp:
     src: /etc/rancher/k3s/k3s.yaml
   register: k3s_kubeconfig_base64
-  when: inventory_hostname == k3s_leader_host
-
-- name: Get Tailscale IP from Leader (Leader Only)
-  command: tailscale ip -4
-  register: tailscale_ip_output
-  changed_when: false
   when: inventory_hostname == k3s_leader_host
 
 - name: Create local .kube directory
@@ -85,6 +85,15 @@
     content: "{{ k3s_kubeconfig_base64.content | b64decode | replace('127.0.0.1', ansible_host) }}"
     dest: "~/.kube/config-{{ k3s_leader_host }}"
     mode: '0600'
+  when: inventory_hostname == k3s_leader_host
+
+- name: Show kubeconfig usage hint
+  debug:
+    msg: >
+      Kubeconfig saved to ~/.kube/config-{{ k3s_leader_host }}.
+      Use: export KUBECONFIG=~/.kube/config-{{ k3s_leader_host }}
+      Or merge: KUBECONFIG=~/.kube/config:~/.kube/config-{{ k3s_leader_host }} kubectl config view --flatten > ~/.kube/config-merged
+  run_once: true
   when: inventory_hostname == k3s_leader_host
 
 - name: Label Control Plane Node with Zone (City)

@@ -5,6 +5,12 @@
   args:
     creates: /usr/bin/tailscale
 
+- name: Upgrade Tailscale to latest
+  apt:
+    name: tailscale
+    state: latest
+    update_cache: true
+
 - name: Enable IPv4 and IPv6 forwarding for Tailscale
   sysctl:
     name: "{{ item.name }}"
