@@ -7,4 +7,12 @@ xray_private_key: ""  # Must be defined in group_vars or secrets
 # Relay Rules (List of objects with listen, target_addr, target_port)
 xray_relay_rules: []
 
+# Traffic Statistics & Exporter Defaults
+xray_enable_stats: false
+xray_enable_exporter: false
+xray_api_port: 10085
+xray_exporter_port: 9550
+xray_exporter_version: "0.6.0"
+
+
 

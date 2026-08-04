@@ -72,3 +72,8 @@
     name: xray-update.timer
     state: started
     enabled: true
+
+- name: Configure and enable Xray exporter
+  include_tasks: exporter.yml
+  when: xray_enable_exporter | default(false) | bool
+
