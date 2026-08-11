@@ -23,6 +23,36 @@
   when: firewall_enable_cluster_trust | bool
   notify: Save Firewall Rules
 
+- name: Allow all traffic on Flannel WireGuard interface
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    in_interface: flannel-wg
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_cluster_trust | bool
+  notify: Save Firewall Rules
+
+- name: Allow all traffic on Flannel VXLAN interface
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    in_interface: flannel.1
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_cluster_trust | bool
+  notify: Save Firewall Rules
+
+- name: Allow all traffic on CNI bridge interface
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    in_interface: cni0
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+  when: firewall_enable_cluster_trust | bool
+  notify: Save Firewall Rules
+
 - name: Allow NodePorts (TCP)
   ansible.builtin.iptables:
     chain: ANSIBLE-FW

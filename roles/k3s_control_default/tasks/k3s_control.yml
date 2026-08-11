@@ -61,7 +61,8 @@
 
   when: >
     k3s_current_version.rc != 0 or
-    k3s_install_version not in k3s_current_version.stdout
+    k3s_install_version not in k3s_current_version.stdout or
+    k3s_force_reinstall | default(false) | bool
 
 - name: Retrieve K3s Kubeconfig (Leader Only)
   slurp:
