@@ -12,7 +12,7 @@
     user: "{{ admin_user }}"
     state: present
     key: "{{ item }}"
-  loop: "{{ admin_ssh_keys }}"
+  loop: "{{ admin_ssh_keys | default([]) }}"
 
 - name: Allow passwordless sudo for admin user
   lineinfile:
