@@ -1,62 +1,59 @@
 ---
-# Skip entire role if derp is not enabled
-- name: Skip DERP role if derp is not enabled
-  meta: end_role
-  when: not (tailscale_derp_enabled | default(false))
+- name: Configure DERP Server
+  when: tailscale_derp_enabled | default(false) | bool
+  block:
+    - name: Create DERP directory
+      file:
+        path: /opt/derp
+        state: directory
+        mode: "0755"
 
-- name: Create DERP directory
-  file:
-    path: /opt/derp
-    state: directory
-    mode: "0755"
+    - name: Check current Go version
+      shell: /usr/local/go/bin/go version 2>/dev/null | grep -oP 'go\K[0-9.]+'
+      register: go_current_version
+      failed_when: false
+      changed_when: false
 
-- name: Check current Go version
-  shell: /usr/local/go/bin/go version 2>/dev/null | grep -oP 'go\K[0-9.]+'
-  register: go_current_version
-  failed_when: false
-  changed_when: false
+    - name: Download Go {{ derp_go_version }}
+      get_url:
+        url: "https://go.dev/dl/go{{ derp_go_version }}.linux-amd64.tar.gz"
+        dest: /tmp/go.tar.gz
+      when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
 
-- name: Download Go {{ derp_go_version }}
-  get_url:
-    url: "https://go.dev/dl/go{{ derp_go_version }}.linux-amd64.tar.gz"
-    dest: /tmp/go.tar.gz
-  when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
+    - name: Remove old Go installation
+      file:
+        path: /usr/local/go
+        state: absent
+      when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
 
-- name: Remove old Go installation
-  file:
-    path: /usr/local/go
-    state: absent
-  when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
+    - name: Extract Go {{ derp_go_version }}
+      unarchive:
+        src: /tmp/go.tar.gz
+        dest: /usr/local
+        remote_src: yes
+      when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
 
-- name: Extract Go {{ derp_go_version }}
-  unarchive:
-    src: /tmp/go.tar.gz
-    dest: /usr/local
-    remote_src: yes
-  when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
+    - name: Build derper (latest version)
+      shell: |
+        export PATH=$PATH:/usr/local/go/bin
+        export GOPATH=/opt/derp/go
+        export GOTMPDIR=/opt/derp/tmp
+        mkdir -p /opt/derp/tmp
+        go install tailscale.com/cmd/derper@latest
+        cp /opt/derp/go/bin/derper /opt/derp/derper
+      args:
+        creates: /opt/derp/derper
+      notify: Restart DERP
 
-- name: Build derper (latest version)
-  shell: |
-    export PATH=$PATH:/usr/local/go/bin
-    export GOPATH=/opt/derp/go
-    export GOTMPDIR=/opt/derp/tmp
-    mkdir -p /opt/derp/tmp
-    go install tailscale.com/cmd/derper@latest
-    cp /opt/derp/go/bin/derper /opt/derp/derper
-  args:
-    creates: /opt/derp/derper
-  notify: Restart DERP
+    - name: Deploy DERP systemd service
+      template:
+        src: derper.service.j2
+        dest: /etc/systemd/system/derper.service
+      notify: Restart DERP
 
-- name: Deploy DERP systemd service
-  template:
-    src: derper.service.j2
-    dest: /etc/systemd/system/derper.service
-  notify: Restart DERP
-
-- name: Enable and start DERP service
-  systemd:
-    name: derper
-    state: started
-    enabled: true
-    daemon_reload: true
-  when: tailscale_derp_enabled | default(false)
+    - name: Enable and start DERP service
+      systemd:
+        name: derper
+        state: started
+        enabled: true
+        daemon_reload: true
