@@ -11,11 +11,3 @@ xray_short_ids: []
 
 # Traffic Sniffing
 xray_enable_sniffing: true
-
-
-# Traffic Statistics & Exporter Defaults
-xray_enable_stats: false
-xray_enable_exporter: false
-xray_api_port: 10085
-xray_exporter_port: 9550
-xray_exporter_version: "0.6.0"

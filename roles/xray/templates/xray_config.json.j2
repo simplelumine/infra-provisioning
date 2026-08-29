@@ -2,27 +2,6 @@
   "log": {
     "loglevel": "warning"
   },
-  {% if xray_enable_stats | default(false) %}
-  "stats": {},
-  "api": {
-    "tag": "api",
-    "services": [
-      "StatsService"
-    ]
-  },
-  "policy": {
-    "levels": {
-      "0": {
-        "statsUserUplink": true,
-        "statsUserDownlink": true
-      }
-    },
-    "system": {
-      "statsInboundUplink": true,
-      "statsInboundDownlink": true
-    }
-  },
-  {% endif %}
   "inbounds": [
     {
       "listen": "0.0.0.0",
@@ -62,41 +41,11 @@
       }
       {% endif %}
     }
-    {% if xray_enable_stats | default(false) %}
-    ,
-    {
-      "listen": "127.0.0.1",
-      "port": {{ xray_api_port }},
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "127.0.0.1"
-      },
-      "tag": "api"
-    }
-    {% endif %}
   ],
   "outbounds": [
     {
       "protocol": "freedom",
       "tag": "direct"
     }
-    {% if xray_enable_stats | default(false) %}
-    ,
-    {
-      "protocol": "freedom",
-      "tag": "api"
-    }
-    {% endif %}
-  ],
-  "routing": {
-    "rules": [
-      {% if xray_enable_stats | default(false) %}
-      {
-        "type": "field",
-        "inboundTag": ["api"],
-        "outboundTag": "api"
-      }
-      {% endif %}
-    ]
-  }
+  ]
 }

@@ -10,5 +10,3 @@ firewall_enable_ingress: true
 
 # Monitoring
 monitoring_enable_node_exporter: true
-xray_enable_stats: true
-xray_enable_exporter: true
