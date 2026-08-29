@@ -56,6 +56,7 @@
     src: xray_config.json.j2
     dest: /usr/local/etc/xray/config.json
     mode: '0644'
+    validate: '/usr/local/bin/xray -test -format json -config %s'
   notify: Restart Xray
 
 - name: Force immediate handler execution

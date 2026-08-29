@@ -1,0 +1,54 @@
+# Traefik Dynamic Sites Configuration - Managed by Ansible
+{% if traefik_sites is defined and traefik_sites | length > 0 %}
+http:
+  routers:
+{% for site in traefik_sites %}
+    site-{{ loop.index }}:
+      rule: "Host(`{{ site.domain }}`)"
+      entryPoints:
+        - "websecure"
+      service: "site-service-{{ loop.index }}"
+{% if site.host_header is defined and site.host_header != '' and site.host_header != site.domain %}
+      middlewares:
+        - "site-header-{{ loop.index }}"
+{% endif %}
+      tls:
+        certResolver: "letsencrypt"
+{% endfor %}
+
+{% set ns = namespace(has_custom_headers=false) %}
+{% for site in traefik_sites %}
+{% if site.host_header is defined and site.host_header != '' and site.host_header != site.domain %}
+{% set ns.has_custom_headers = true %}
+{% endif %}
+{% endfor %}
+{% if ns.has_custom_headers %}
+  middlewares:
+{% for site in traefik_sites %}
+{% if site.host_header is defined and site.host_header != '' and site.host_header != site.domain %}
+    site-header-{{ loop.index }}:
+      headers:
+        customRequestHeaders:
+          Host: "{{ site.host_header }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+
+  services:
+{% for site in traefik_sites %}
+    site-service-{{ loop.index }}:
+      loadBalancer:
+{% if site.pass_host_header is defined %}
+        passHostHeader: {{ site.pass_host_header | lower }}
+{% endif %}
+        servers:
+          - url: "{{ site.upstream }}"
+{% if site.tls_insecure | default(false) %}
+        serversTransport: "insecureTransport"
+{% endif %}
+{% endfor %}
+
+  serversTransports:
+    insecureTransport:
+      insecureSkipVerify: true
+{% endif %}

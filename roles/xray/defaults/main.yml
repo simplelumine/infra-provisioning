@@ -4,6 +4,14 @@ xray_clients: []
 xray_host_clients: []  # Per-host clients (optional, merged with global)
 xray_private_key: ""  # Must be defined in group_vars or secrets
 
+# REALITY Configuration
+xray_reality_dest: ""
+xray_reality_server_names: []
+xray_short_ids: []
+
+# Traffic Sniffing
+xray_enable_sniffing: true
+
 # Relay Rules (List of objects with listen, target_addr, target_port)
 xray_relay_rules: []
 
@@ -13,6 +21,3 @@ xray_enable_exporter: false
 xray_api_port: 10085
 xray_exporter_port: 9550
 xray_exporter_version: "0.6.0"
-
-
-

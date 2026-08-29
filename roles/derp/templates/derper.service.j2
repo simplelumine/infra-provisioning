@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 # derper runs HTTPS on internal port 8443
 # It auto-generates a self-signed certificate
-# Caddy proxies https://relay.xxx -> https://127.0.0.1:8443 with tls_insecure_skip_verify
+# Traefik proxies https://relay.xxx -> https://127.0.0.1:8443 with insecureSkipVerify
 ExecStart=/opt/derp/derper \
   --hostname={{ tailscale_derp_hostname }} \
   -a=:{{ tailscale_derp_http_port | default(8443) }} \

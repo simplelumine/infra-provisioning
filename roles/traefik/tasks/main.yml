@@ -1,0 +1,82 @@
+---
+- name: Create Traefik configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /etc/traefik
+    - /etc/traefik/conf.d
+
+- name: Check current Traefik version
+  ansible.builtin.command: /usr/local/bin/traefik version
+  register: traefik_current_version_out
+  changed_when: false
+  failed_when: false
+
+- name: Download and install Traefik binary
+  ansible.builtin.unarchive:
+    src: "https://github.com/traefik/traefik/releases/download/v{{ traefik_version }}/traefik_v{{ traefik_version }}_linux_amd64.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: '0755'
+    include:
+      - traefik
+  when: >
+    traefik_current_version_out.rc != 0 or
+    traefik_version not in traefik_current_version_out.stdout
+  notify: Restart Traefik
+
+- name: Ensure ACME storage file exists with secure permissions
+  ansible.builtin.file:
+    path: /etc/traefik/acme.json
+    state: touch
+    mode: '0600'
+    modification_time: preserve
+    access_time: preserve
+
+- name: Configure Traefik static settings
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: /etc/traefik/traefik.yml
+    mode: '0644'
+  notify: Restart Traefik
+
+- name: Configure Xray TCP dynamic routing
+  ansible.builtin.template:
+    src: conf.d/xray.yml.j2
+    dest: /etc/traefik/conf.d/xray.yml
+    mode: '0644'
+  notify: Restart Traefik
+
+- name: Configure DERP HTTPS dynamic routing
+  ansible.builtin.template:
+    src: conf.d/derp.yml.j2
+    dest: /etc/traefik/conf.d/derp.yml
+    mode: '0644'
+  when: tailscale_derp_enabled | default(false) | bool
+  notify: Restart Traefik
+
+- name: Configure custom sites dynamic routing
+  ansible.builtin.template:
+    src: conf.d/sites.yml.j2
+    dest: /etc/traefik/conf.d/sites.yml
+    mode: '0644'
+  when: traefik_sites is defined and traefik_sites | length > 0
+  notify: Restart Traefik
+
+- name: Deploy Traefik systemd service
+  ansible.builtin.template:
+    src: traefik.service.j2
+    dest: /etc/systemd/system/traefik.service
+    mode: '0644'
+  notify: Restart Traefik
+
+- name: Force immediate handler execution
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure Traefik service is running and enabled
+  ansible.builtin.service:
+    name: traefik
+    state: started
+    enabled: true

@@ -1,8 +1,7 @@
 ---
-caddy_sites:
+traefik_sites:
   - domain: "xxx.xxx.com"
-    upstream: ""
-    host_header: "xxx.xxx.com"
+    upstream: "http://127.0.0.1:8080"
 
 xray_host_clients:
   - id: "xxxx"

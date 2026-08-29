@@ -1,0 +1,15 @@
+# Traefik TCP Routing for Xray REALITY - Managed by Ansible
+tcp:
+  routers:
+    xray-reality:
+      rule: "{% for sni in xray_reality_server_names %}HostSNI(`{{ sni }}`){{ ' || ' if not loop.last else '' }}{% endfor %}"
+      entryPoints:
+        - "websecure"
+      service: "xray-service"
+      tls:
+        passthrough: true
+  services:
+    xray-service:
+      loadBalancer:
+        servers:
+          - address: "127.0.0.1:{{ xray_port_tcp | default(10000) }}"

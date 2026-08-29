@@ -15,11 +15,18 @@ ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev
 admin_ssh_keys:
   - "ssh-ed25519 AAAA... you@personal"
 
+# --- Traefik Configuration ---
+traefik_acme_email: "admin@yourdomain.com"
+
 # --- Xray Configuration ---
-xray_port_tcp:
-xray_api_port:
-xray_exporter_port:
+xray_port_tcp: 10000
+xray_api_port: 10085
+xray_exporter_port: 9550
 xray_private_key: "{{ vault_xray_private_key }}"
+xray_short_ids: "{{ vault_xray_short_ids }}"
+xray_reality_dest: "gateway.icloud.com:443"
+xray_reality_server_names:
+  - "gateway.icloud.com"
 
 xray_clients:
   - id: "{{ vault_xray_u_admin }}"

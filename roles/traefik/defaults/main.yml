@@ -1,0 +1,5 @@
+---
+traefik_version: "3.3.4"
+traefik_acme_email: "admin@example.com"
+traefik_sites: []
+traefik_enable_dashboard: false

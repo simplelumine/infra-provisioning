@@ -46,13 +46,21 @@
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "www.apple.com:443",
+          "dest": "{{ xray_reality_dest }}",
           "xver": 0,
-          "serverNames": [ "www.apple.com" ],
+          "serverNames": {{ xray_reality_server_names | to_json }},
           "privateKey": "{{ xray_private_key }}",
           "shortIds": {{ xray_short_ids | to_json }}
         }
       }
+      {% if xray_enable_sniffing | default(true) %}
+      ,
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "routeOnly": true
+      }
+      {% endif %}
     }
     {% if xray_enable_stats | default(false) %}
     ,

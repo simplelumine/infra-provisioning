@@ -1,7 +1,7 @@
 ---
 tailscale_derp_enabled: false
-tailscale_derp_hostname: ""  # e.g., relay.simplelumine.com (used by Caddy)
-tailscale_derp_http_port: 3340  # Internal port, Caddy proxies to this
+tailscale_derp_hostname: ""  # e.g., relay.simplelumine.com (used by Traefik)
+tailscale_derp_http_port: 3340  # Internal port, Traefik proxies to this
 tailscale_derp_stun_port: 3478
 tailscale_derp_verify_clients: true
 

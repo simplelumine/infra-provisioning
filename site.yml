@@ -7,8 +7,6 @@
       tags: common
     - role: tailscale
       tags: tailscale
-    - role: xray
-      tags: xray
     - role: firewall
       tags: firewall
 
@@ -17,8 +15,10 @@
   become: true
   gather_facts: true
   roles:
-    - role: caddy
-      tags: caddy
+    - role: traefik
+      tags: traefik
+    - role: xray
+      tags: xray
     - role: derp
       tags: derp
     - role: node_exporter

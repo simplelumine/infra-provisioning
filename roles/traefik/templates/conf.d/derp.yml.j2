@@ -1,0 +1,21 @@
+# Traefik HTTPS Reverse Proxy for Tailscale DERP - Managed by Ansible
+{% if tailscale_derp_enabled | default(false) | bool and tailscale_derp_hostname | default('') != '' %}
+http:
+  routers:
+    derp-relay:
+      rule: "Host(`{{ tailscale_derp_hostname }}`)"
+      entryPoints:
+        - "websecure"
+      service: "derp-service"
+      tls:
+        certResolver: "letsencrypt"
+  services:
+    derp-service:
+      loadBalancer:
+        servers:
+          - url: "https://127.0.0.1:{{ tailscale_derp_http_port | default(8443) }}"
+        serversTransport: "derpTransport"
+  serversTransports:
+    derpTransport:
+      insecureSkipVerify: true
+{% endif %}
