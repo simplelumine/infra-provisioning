@@ -12,10 +12,11 @@ tailscale_peer_relay_port: 0
 tailscale_derp_enabled: false
 tailscale_derp_stun_port: 3478
 
-# Allowed TCP Ports (Kubernetes)
+# Allowed TCP Ports (Kubernetes & Services)
 # Only applied if firewall_enable_cluster_trust is true
 firewall_allowed_tcp_ports:
   - 6443   # Kubernetes API
+  - 8443   # Xray Reality
   - 10250  # Kubelet Metrics
   # - 2379   # Etcd Client
   # - 2380   # Etcd Peer
