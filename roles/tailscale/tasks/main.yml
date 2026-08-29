@@ -36,12 +36,12 @@
   changed_when: false
 
 - name: Authenticate Tailscale
-  command: tailscale up --authkey={{ tailscale_auth_key }}
+  command: tailscale up --authkey={{ tailscale_auth_key }} --reset
   when: >
     tailscale_auth_key is defined and
     tailscale_auth_key | length > 0 and
     (ts_status.rc != 0 or
-     (ts_status.stdout | from_json).BackendState != 'Running')
+     (ts_status.stdout | default('{}') | from_json).BackendState | default('') not in ['Running', 'Starting'])
   register: tailscale_up
   changed_when: tailscale_up.rc == 0
 

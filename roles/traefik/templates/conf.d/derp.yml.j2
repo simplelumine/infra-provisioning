@@ -18,4 +18,5 @@ http:
   serversTransports:
     derpTransport:
       insecureSkipVerify: true
+      serverName: "{{ tailscale_derp_hostname }}"
 {% endif %}

@@ -11,6 +11,8 @@ ExecStart=/opt/derp/derper \
   --hostname={{ tailscale_derp_hostname }} \
   -a=:{{ tailscale_derp_http_port | default(8443) }} \
   --http-port=-1 \
+  --certmode=manual \
+  --certdir=/etc/derp/certs \
   --stun-port={{ tailscale_derp_stun_port }} \
 {% if tailscale_derp_verify_clients %}
   --verify-clients

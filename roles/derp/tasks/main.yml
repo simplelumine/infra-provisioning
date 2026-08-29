@@ -45,6 +45,23 @@
         creates: /opt/derp/derper
       notify: Restart DERP
 
+    - name: Create DERP certs directory
+      file:
+        path: /etc/derp/certs
+        state: directory
+        mode: "0755"
+
+    - name: Generate self-signed certificate for DERP internal HTTPS (with SAN)
+      command: >
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048
+        -keyout /etc/derp/certs/{{ tailscale_derp_hostname }}.key
+        -out /etc/derp/certs/{{ tailscale_derp_hostname }}.crt
+        -subj "/CN={{ tailscale_derp_hostname }}"
+        -addext "subjectAltName=DNS:{{ tailscale_derp_hostname }}"
+      args:
+        creates: "/etc/derp/certs/{{ tailscale_derp_hostname }}.crt"
+      notify: Restart DERP
+
     - name: Deploy DERP systemd service
       template:
         src: derper.service.j2

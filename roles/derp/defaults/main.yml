@@ -6,5 +6,5 @@ tailscale_derp_stun_port: 3478
 tailscale_derp_verify_clients: true
 
 # Go version used for building derper
-derp_go_version: "1.26.4"
+derp_go_version: "1.27.0"
 
