@@ -12,8 +12,6 @@ xray_short_ids: []
 # Traffic Sniffing
 xray_enable_sniffing: true
 
-# Relay Rules (List of objects with listen, target_addr, target_port)
-xray_relay_rules: []
 
 # Traffic Statistics & Exporter Defaults
 xray_enable_stats: false

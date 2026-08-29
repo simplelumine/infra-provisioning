@@ -7,14 +7,9 @@ firewall_enable_tailscale_trust: true
 firewall_enable_cluster_trust: false
 firewall_enable_nodeports: false
 firewall_enable_ingress: true
+firewall_enable_xray: true
+
 # Monitoring
 monitoring_enable_node_exporter: true
 xray_enable_stats: true
 xray_enable_exporter: true
-
-
-# Xray Relay Configuration
-xray_relay_rules:
-  - listen: 10001
-    target_addr: "1.2.3.4"
-    target_port: 10000

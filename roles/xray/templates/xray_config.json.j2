@@ -74,22 +74,6 @@
       "tag": "api"
     }
     {% endif %}
-    {% if xray_relay_rules is defined and xray_relay_rules | length > 0 %}
-    ,
-    {% for rule in xray_relay_rules %}
-    {
-      "listen": "0.0.0.0",
-      "port": {{ rule.listen }},
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "{{ rule.target_addr }}",
-        "port": {{ rule.target_port }},
-        "network": "tcp,udp"
-      },
-      "tag": "relay-{{ loop.index }}"
-    }{{ "," if not loop.last else "" }}
-    {% endfor %}
-    {% endif %}
   ],
   "outbounds": [
     {
@@ -103,15 +87,6 @@
       "tag": "api"
     }
     {% endif %}
-    {% if xray_relay_rules is defined and xray_relay_rules | length > 0 %}
-    ,
-    {% for rule in xray_relay_rules %}
-    {
-      "protocol": "freedom",
-      "tag": "relay-out-{{ loop.index }}"
-    }{{ "," if not loop.last else "" }}
-    {% endfor %}
-    {% endif %}
   ],
   "routing": {
     "rules": [
@@ -120,16 +95,7 @@
         "type": "field",
         "inboundTag": ["api"],
         "outboundTag": "api"
-      }{% if xray_relay_rules is defined and xray_relay_rules | length > 0 %},{% endif %}
-      {% endif %}
-      {% if xray_relay_rules is defined and xray_relay_rules | length > 0 %}
-      {% for rule in xray_relay_rules %}
-      {
-        "type": "field",
-        "inboundTag": ["relay-{{ loop.index }}"],
-        "outboundTag": "relay-out-{{ loop.index }}"
-      }{{ "," if not loop.last else "" }}
-      {% endfor %}
+      }
       {% endif %}
     ]
   }
