@@ -17,7 +17,6 @@
 
 # 4. App Rules
 - import_tasks: ingress.yml
-- import_tasks: xray.yml
 
 # 5. Tailscale Rules
 - import_tasks: tailscale.yml

@@ -8,7 +8,6 @@ firewall_enable_tailscale_trust: true
 firewall_enable_cluster_trust: true
 firewall_enable_nodeports: true
 firewall_enable_ingress: true
-firewall_enable_xray: true
 
 # --- K3s Configuration ---
 k3s_install_version: "v1.34.2+k3s1"

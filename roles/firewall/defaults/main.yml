@@ -4,7 +4,6 @@
 # Enable/Disable features
 firewall_enable_ingress: true
 firewall_enable_tailscale_trust: true
-firewall_enable_xray: true
 firewall_enable_cluster_trust: false
 firewall_enable_nodeports: false
 
@@ -12,10 +11,6 @@ firewall_enable_nodeports: false
 tailscale_peer_relay_port: 0
 tailscale_derp_enabled: false
 tailscale_derp_stun_port: 3478
-
-# Xray
-xray_port_tcp: 10000
-xray_exporter_port: 9550
 
 # Allowed TCP Ports (Kubernetes)
 # Only applied if firewall_enable_cluster_trust is true
