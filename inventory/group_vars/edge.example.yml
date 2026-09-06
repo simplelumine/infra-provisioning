@@ -10,3 +10,6 @@ firewall_enable_ingress: true
 
 # Monitoring
 monitoring_enable_node_exporter: true
+
+# --- Xray Configuration (Edge Internal Port) ---
+xray_port_tcp: 10000

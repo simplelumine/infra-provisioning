@@ -29,6 +29,8 @@
   become: true
   gather_facts: true
   roles:
+    - role: xray
+      tags: xray
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_control_default
@@ -39,6 +41,8 @@
   become: true
   gather_facts: true
   roles:
+    - role: xray
+      tags: xray
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_worker
