@@ -7,4 +7,8 @@ tailscale_derp_verify_clients: true
 
 # Go version used for building derper
 derp_go_version: "1.27.0"
+derp_go_arch_map:
+  x86_64: "amd64"
+  aarch64: "arm64"
+derp_go_arch: "{{ derp_go_arch_map[ansible_architecture] | default('amd64') }}"
 

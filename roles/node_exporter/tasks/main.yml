@@ -29,11 +29,11 @@
         src: "/tmp/{{ node_exporter_archive }}"
         dest: "/tmp"
         remote_src: true
-        creates: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        creates: "/tmp/node_exporter-{{ node_exporter_version }}.linux-{{ node_exporter_arch }}/node_exporter"
 
     - name: Install node_exporter binary
       copy:
-        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-{{ node_exporter_arch }}/node_exporter"
         dest: "{{ node_exporter_install_dir }}/node_exporter"
         mode: '0755'
         owner: "{{ node_exporter_user }}"

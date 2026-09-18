@@ -4,7 +4,14 @@ node_exporter_version: "1.11.1"
 node_exporter_user: "node_exporter"
 node_exporter_group: "node_exporter"
 node_exporter_port: 9100
-node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_arch_map:
+  x86_64: "amd64"
+  aarch64: "arm64"
+node_exporter_arch: "{{ node_exporter_arch_map[ansible_architecture] | default('amd64') }}"
+node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-{{ node_exporter_arch }}.tar.gz"
 node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_archive }}"
 node_exporter_install_dir: "/usr/local/bin"
-node_exporter_checksum: "sha256:9f5ea48e5bc7b656f8a91a32e7d7deb89f70f73dabd0d974418aca15f37d6810"
+node_exporter_checksum_map:
+  amd64: "sha256:9f5ea48e5bc7b656f8a91a32e7d7deb89f70f73dabd0d974418aca15f37d6810"
+  arm64: "sha256:ba1886efbd76cb96b0087c695ea8d1b9cb6e8aa946c996d744e9ee16c8e3591a"
+node_exporter_checksum: "{{ node_exporter_checksum_map[node_exporter_arch] }}"

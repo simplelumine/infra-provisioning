@@ -16,7 +16,7 @@
 
     - name: Download Go {{ derp_go_version }}
       get_url:
-        url: "https://go.dev/dl/go{{ derp_go_version }}.linux-amd64.tar.gz"
+        url: "https://go.dev/dl/go{{ derp_go_version }}.linux-{{ derp_go_arch }}.tar.gz"
         dest: /tmp/go.tar.gz
       when: go_current_version.rc != 0 or go_current_version.stdout != derp_go_version
 
