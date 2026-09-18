@@ -41,6 +41,7 @@
 
 {% if firewall_enable_tailscale_trust | bool %}
 -A ANSIBLE-FW6 -i tailscale0 -j ACCEPT
+-A ANSIBLE-FW6 -p udp -m udp --dport {{ tailscale_peer_relay_port | default(41641) }} -j ACCEPT
 {% endif %}
 
 {% if tailscale_derp_enabled | default(false) | bool %}

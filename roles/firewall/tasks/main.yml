@@ -5,12 +5,6 @@
     state: directory
     mode: '0755'
 
-- name: Remove netfilter-persistent if present
-  apt:
-    name:
-      - iptables-persistent
-      - netfilter-persistent
-    state: absent
 
 # 1. Deploy deterministic static firewall templates for boot persistence
 - name: Deploy static IPv4 firewall rules template
