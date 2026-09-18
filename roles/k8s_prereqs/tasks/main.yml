@@ -14,20 +14,16 @@
   loop:
     - overlay
     - br_netfilter
+    - wireguard
 
 - name: Ensure Kernel Modules load on boot
   copy:
     content: |
       overlay
       br_netfilter
+      wireguard
     dest: /etc/modules-load.d/k8s.conf
 
-- name: Mount BPF filesystem
-  mount:
-    path: /sys/fs/bpf
-    src: bpf
-    fstype: bpf
-    state: mounted
 
 # Populate /etc/hosts with cluster node public IPs
 # This ensures K3s nodes communicate via public IP, not Tailscale MagicDNS

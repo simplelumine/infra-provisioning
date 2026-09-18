@@ -29,20 +29,15 @@
     k3s_install_version not in k3s_current_version.stdout or
     k3s_force_reinstall | default(false) | bool
 
-- name: Label Worker Node with Role
-  command: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=true --overwrite
-  delegate_to: "{{ k3s_leader_host }}"
-  environment:
-    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-  register: worker_label_result
-  changed_when: "'not labeled' not in worker_label_result.stdout"
-
 - name: Label Worker Node with Zone (City)
   command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/zone={{ inventory_hostname[:3] }} --overwrite
   delegate_to: "{{ k3s_leader_host }}"
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: zone_label_result
+  until: zone_label_result.rc == 0
+  retries: 10
+  delay: 3
   changed_when: "'not labeled' not in zone_label_result.stdout"
 
 - name: Label Worker Node with Region
@@ -51,4 +46,7 @@
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: region_label_result
+  until: region_label_result.rc == 0
+  retries: 10
+  delay: 3
   changed_when: "'not labeled' not in region_label_result.stdout"

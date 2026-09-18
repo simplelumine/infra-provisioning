@@ -1,26 +1,19 @@
-# IPv4 Chain Setup - SAFETY FIRST
-# Strategy: ACCEPT policy → flush INPUT → add safety rules → DROP policy
-# This guarantees a clean INPUT chain with no duplicate rules.
+# IPv4 Chain Setup - Safe Idempotent Configuration
+# Manage ANSIBLE-FW custom chain without flushing the system INPUT chain (which K3s depends on).
 
-# 1. Temporarily set INPUT policy to ACCEPT (safety net before flush)
-- name: Temporarily set INPUT policy to ACCEPT
-  ansible.builtin.iptables:
-    chain: INPUT
-    policy: ACCEPT
-    ip_version: ipv4
-
-# 2. Flush INPUT chain to remove all existing rules (including duplicates)
-- name: Flush INPUT chain
-  ansible.builtin.iptables:
-    chain: INPUT
-    flush: true
-    ip_version: ipv4
-
-# 3. Add safety rules (fresh, single copy)
+# 1. Base safety rules on INPUT (connection tracking, loopback, SSH)
 - name: Allow established connections on INPUT
   ansible.builtin.iptables:
     chain: INPUT
     ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+
+- name: Allow loopback traffic on INPUT
+  ansible.builtin.iptables:
+    chain: INPUT
+    in_interface: lo
     jump: ACCEPT
     action: append
     ip_version: ipv4
@@ -34,7 +27,7 @@
     action: append
     ip_version: ipv4
 
-# 4. Manage Custom Chain
+# 2. Manage Custom Chain (ANSIBLE-FW)
 - name: Create ANSIBLE-FW chain
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
@@ -48,6 +41,14 @@
     flush: true
     ip_version: ipv4
 
+- name: Allow ICMP on ANSIBLE-FW
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW
+    protocol: icmp
+    jump: ACCEPT
+    action: append
+    ip_version: ipv4
+
 - name: Add INPUT jump to ANSIBLE-FW
   ansible.builtin.iptables:
     chain: INPUT
@@ -55,31 +56,28 @@
     action: append
     ip_version: ipv4
 
-# 5. Now safe to set DROP policy (ESTABLISHED + SSH + ANSIBLE-FW jump are in place)
+# 3. Safe to set DROP policy (ESTABLISHED + lo + SSH + ANSIBLE-FW jump are in place)
 - name: Set INPUT chain default policy to DROP
   ansible.builtin.iptables:
     chain: INPUT
     policy: DROP
     ip_version: ipv4
-  notify: Save Firewall Rules
 
-# IPv6 Chain Setup - SAFETY FIRST (same strategy)
-- name: Temporarily set INPUT policy to ACCEPT (IPv6)
-  ansible.builtin.iptables:
-    chain: INPUT
-    policy: ACCEPT
-    ip_version: ipv6
-
-- name: Flush INPUT chain (IPv6)
-  ansible.builtin.iptables:
-    chain: INPUT
-    flush: true
-    ip_version: ipv6
+# IPv6 Chain Setup - Safe Idempotent Configuration
+# Manage ANSIBLE-FW6 custom chain without flushing the system INPUT chain.
 
 - name: Allow established connections on INPUT (IPv6)
   ansible.builtin.iptables:
     chain: INPUT
     ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+
+- name: Allow loopback traffic on INPUT (IPv6)
+  ansible.builtin.iptables:
+    chain: INPUT
+    in_interface: lo
     jump: ACCEPT
     action: append
     ip_version: ipv6
@@ -106,6 +104,14 @@
     flush: true
     ip_version: ipv6
 
+- name: Allow ICMPv6 on ANSIBLE-FW6
+  ansible.builtin.iptables:
+    chain: ANSIBLE-FW6
+    protocol: ipv6-icmp
+    jump: ACCEPT
+    action: append
+    ip_version: ipv6
+
 - name: Add INPUT jump to ANSIBLE-FW6 (IPv6)
   ansible.builtin.iptables:
     chain: INPUT
@@ -118,4 +124,3 @@
     chain: INPUT
     policy: DROP
     ip_version: ipv6
-  notify: Save IPv6 Firewall Rules

@@ -7,28 +7,21 @@ firewall_enable_tailscale_trust: true
 firewall_enable_cluster_trust: false
 firewall_enable_nodeports: false
 
-# Tailscale
-tailscale_peer_relay_port: 0
+# Tailscale DERP
 tailscale_derp_enabled: false
 tailscale_derp_stun_port: 3478
 
-# Allowed TCP Ports (Kubernetes & Services)
-# Only applied if firewall_enable_cluster_trust is true
+# Public TCP Ports (Only applied if firewall_enable_cluster_trust is true)
 firewall_allowed_tcp_ports:
-  - 6443   # Kubernetes API
-  - 8443   # Xray Reality
-  - 10250  # Kubelet Metrics
-  # - 2379   # Etcd Client
-  # - 2380   # Etcd Peer
-  # - 4240   # Cilium Health
-  # - 4244   # Cilium Hubble Server
-  # - 4245   # Cilium Hubble Relay
+  - 6443   # Kubernetes API Server
+  - "{{ xray_port_tcp | default(8443) }}"   # Xray Reality
+
+# Cluster Internal TCP Ports (Restricted to groups['cluster'] nodes)
+firewall_cluster_internal_tcp_ports:
+  - 10250  # Kubelet API / Metrics
+  - 9100   # Prometheus Node Exporter
 
 # Allowed UDP Ports (Flannel WireGuard)
 # Only applied if firewall_enable_cluster_trust is true
 firewall_allowed_udp_ports:
   - 51820  # Flannel WireGuard Native
-  # - 8472   # VXLAN (Flannel Default - Not used with WireGuard)
-  # - 51871  # Old WireGuard Port
-  # - 6081   # Geneve (Cilium)
-

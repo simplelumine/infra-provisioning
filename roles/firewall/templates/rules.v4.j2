@@ -1,0 +1,64 @@
+# Managed by Ansible - DO NOT EDIT MANUALLY
+*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:ANSIBLE-FW - [0:0]
+
+# Base safety rules on INPUT
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -j ANSIBLE-FW
+
+# ANSIBLE-FW Chain Rules
+-A ANSIBLE-FW -i lo -j ACCEPT
+-A ANSIBLE-FW -p icmp -j ACCEPT
+
+{% if firewall_enable_cluster_trust | bool %}
+# Flannel WireGuard & CNI interfaces and Pod/Service CIDRs
+-A ANSIBLE-FW -i flannel-wg -j ACCEPT
+-A ANSIBLE-FW -i cni0 -j ACCEPT
+-A ANSIBLE-FW -s 10.42.0.0/16 -j ACCEPT
+-A ANSIBLE-FW -s 10.43.0.0/16 -j ACCEPT
+
+# Public K3s / WireGuard ports
+{% for port in firewall_allowed_tcp_ports %}
+-A ANSIBLE-FW -p tcp -m tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+{% for port in firewall_allowed_udp_ports %}
+-A ANSIBLE-FW -p udp -m udp --dport {{ port }} -j ACCEPT
+{% endfor %}
+
+# Cluster Internal TCP Ports (Restricted to cluster nodes)
+{% for host in groups['cluster'] | default([]) %}
+{% if hostvars[host].ansible_host is defined %}
+{% for port in firewall_cluster_internal_tcp_ports %}
+-A ANSIBLE-FW -s {{ hostvars[host].ansible_host }}/32 -p tcp -m tcp --dport {{ port }} -j ACCEPT
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if firewall_enable_nodeports | bool %}
+-A ANSIBLE-FW -p tcp -m tcp --dport 30000:32767 -j ACCEPT
+-A ANSIBLE-FW -p udp -m udp --dport 30000:32767 -j ACCEPT
+{% endif %}
+
+{% if firewall_enable_ingress | bool %}
+-A ANSIBLE-FW -p tcp -m tcp --dport 80 -j ACCEPT
+-A ANSIBLE-FW -p tcp -m tcp --dport 443 -j ACCEPT
+{% endif %}
+
+{% if firewall_enable_tailscale_trust | bool %}
+-A ANSIBLE-FW -i tailscale0 -j ACCEPT
+{% endif %}
+
+{% if tailscale_derp_enabled | default(false) | bool %}
+-A ANSIBLE-FW -p udp -m udp --dport {{ tailscale_derp_stun_port | default(3478) }} -j ACCEPT
+{% endif %}
+
+# Drop all remaining traffic
+-A ANSIBLE-FW -j DROP
+
+COMMIT

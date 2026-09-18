@@ -1,51 +1,82 @@
 ---
-- name: Install iptables-persistent
+- name: Ensure iptables directory exists
+  file:
+    path: /etc/iptables
+    state: directory
+    mode: '0755'
+
+- name: Remove netfilter-persistent if present
   apt:
     name:
       - iptables-persistent
       - netfilter-persistent
-    state: present
+    state: absent
 
-# 1. Setup Chains & Policies
+# 1. Deploy deterministic static firewall templates for boot persistence
+- name: Deploy static IPv4 firewall rules template
+  template:
+    src: rules.v4.j2
+    dest: /etc/iptables/rules.v4
+    mode: '0600'
+
+- name: Deploy static IPv6 firewall rules template
+  template:
+    src: rules.v6.j2
+    dest: /etc/iptables/rules.v6
+    mode: '0600'
+
+# 2. Setup Chains & Policies for current running kernel
 - import_tasks: setup.yml
 
-# 2. Base Rules (SSH, ICMP, Loopback)
-- import_tasks: base.yml
-
-# 3. Cluster Rules (K8s, Cilium, NodePorts)
+# 4. Cluster Rules (K8s, WireGuard, NodePorts, Node-to-node whitelists)
 - include_tasks: cluster.yml
 
-# 4. App Rules
+# 5. App Rules
 - import_tasks: ingress.yml
 
-# 5. Tailscale Rules
+# 6. Tailscale Rules
 - import_tasks: tailscale.yml
 
-# 6. DERP Rules
+# 7. DERP Rules
 - import_tasks: derp.yml
 
-# 7. Final Drop Rule
-- name: Log and Drop at end of ANSIBLE-FW
+# 8. Final Drop Rule
+- name: Drop at end of ANSIBLE-FW
   ansible.builtin.iptables:
     chain: ANSIBLE-FW
     jump: DROP
     action: append
     ip_version: ipv4
-  notify: Save Firewall Rules
 
-- name: Log and Drop at end of ANSIBLE-FW6
+- name: Drop at end of ANSIBLE-FW6
   ansible.builtin.iptables:
     chain: ANSIBLE-FW6
     jump: DROP
     action: append
     ip_version: ipv6
-  notify: Save IPv6 Firewall Rules
 
-# 8. Save rules to disk immediately
-- meta: flush_handlers
+# 9. Deploy systemd oneshot service for boot persistence
+- name: Deploy systemd oneshot service for firewall persistence
+  copy:
+    dest: /etc/systemd/system/ansible-firewall.service
+    content: |
+      [Unit]
+      Description=Restore ANSIBLE-FW Host Firewall Rules
+      Before=network-pre.target
+      Wants=network-pre.target
+      DefaultDependencies=no
 
-- name: Enable netfilter-persistent
-  service:
-    name: netfilter-persistent
-    state: started
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c '[ -f /etc/iptables/rules.v4 ] && /sbin/iptables-restore /etc/iptables/rules.v4 || true; [ -f /etc/iptables/rules.v6 ] && /sbin/ip6tables-restore /etc/iptables/rules.v6 || true'
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Enable ansible-firewall systemd service
+  systemd:
+    name: ansible-firewall
     enabled: true
+    daemon_reload: true
