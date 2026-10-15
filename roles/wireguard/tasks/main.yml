@@ -8,6 +8,7 @@
   apt:
     name:
       - wireguard-tools
+      - ndisc6
     state: present
     update_cache: true
 
@@ -40,18 +41,55 @@
     - { name: "net.ipv4.ip_forward", value: "1" }
     - { name: "net.ipv6.conf.all.forwarding", value: "1" }
 
+- name: Check if global IPv6 address exists
+  command: "ip -6 addr show dev {{ ansible_default_ipv4.interface | default('eth0') }} scope global"
+  register: ipv6_global_addr
+  changed_when: false
+  failed_when: false
+
+- name: Check if static IPv6 Netplan config already exists
+  stat:
+    path: /etc/netplan/90-ipv6.yaml
+  register: ipv6_netplan_file
+
+- name: Configure static IPv6 via Netplan if no automatic IPv6 is present
+  copy:
+    dest: /etc/netplan/90-ipv6.yaml
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          {{ ansible_default_ipv4.interface | default('eth0') }}:
+            addresses:
+              - {{ ipv6_address }}
+            routes:
+              - to: default
+                via: {{ ipv6_gateway | default('fe80::1') }}
+  register: ipv6_netplan_configured
+  when:
+    - ipv6_address is defined
+    - ipv6_address | length > 0
+    - (ipv6_global_addr.stdout | default('') | trim | length == 0) or ipv6_netplan_file.stat.exists
+
+- name: Apply Netplan configuration for static IPv6
+  command: netplan apply
+  when: ipv6_netplan_configured is changed
+
 - name: Check if IPv6 default route exists
   command: ip -6 route show default
   register: ipv6_default_route
   changed_when: false
   failed_when: false
 
-- name: Recover IPv6 RA default route if missing (safe soft toggle without dropping interface)
-  shell: |
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    sleep 3
-    sysctl -w net.ipv6.conf.all.forwarding=1
-  when: ipv6_default_route.stdout | default('') | trim | length == 0
+- name: Solicit IPv6 Router Advertisement (RA) if default route is missing
+  command: "rdisc6 -1 {{ ansible_default_ipv4.interface | default('eth0') }}"
+  failed_when: false
+  when:
+    - ipv6_default_route.stdout | default('') | trim | length == 0
+    - ipv6_address is not defined or ipv6_address | length == 0
 
 - name: Ensure /etc/wireguard directory exists
   file:

@@ -3,6 +3,8 @@
   shell: |
     if ip link show {{ wireguard_interface }} >/dev/null 2>&1; then
       wg syncconf {{ wireguard_interface }} <(wg-quick strip {{ wireguard_interface }})
+      ip -4 addr flush dev {{ wireguard_interface }}
+      ip -4 addr add {{ wg_ip }}/{{ wireguard_netmask }} dev {{ wireguard_interface }}
     else
       systemctl restart wg-quick@{{ wireguard_interface }}
     fi

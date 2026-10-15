@@ -13,6 +13,24 @@
     group: root
     mode: '0644'
 
+- name: Configure unified clean DNS (/etc/resolv.conf)
+  copy:
+    dest: /etc/resolv.conf
+    follow: false
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Managed by Ansible (common role)
+      {% if ':' in (wg_endpoint | default('')) %}
+      nameserver 2606:4700:4700::1111
+      nameserver 2001:4860:4860::8888
+      {% else %}
+      nameserver 1.1.1.1
+      nameserver 8.8.8.8
+      {% endif %}
+      options timeout:2 attempts:2
+
 # 2. Base Packages & Time Sync
 - name: Install system dependencies (Common)
   apt:

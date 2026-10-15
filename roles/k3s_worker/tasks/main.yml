@@ -10,6 +10,12 @@
   changed_when: false
   failed_when: false
 
+- name: Check current K3s agent service config
+  command: cat /etc/systemd/system/k3s-agent.service
+  register: k3s_agent_service
+  changed_when: false
+  failed_when: false
+
 - name: Fetch K3s Token from Leader
   slurp:
     src: /var/lib/rancher/k3s/server/node-token
@@ -29,7 +35,16 @@
   when: >
     k3s_current_version.rc != 0 or
     k3s_install_version not in k3s_current_version.stdout or
+    ('--node-ip ' ~ wg_ip) not in (k3s_agent_service.stdout | default('')) or
+    ('--node-external-ip ' ~ (ansible_host | string)) not in (k3s_agent_service.stdout | default('')) or
     k3s_force_reinstall | default(false) | bool
+
+- name: Ensure K3s Agent service is enabled and running
+  systemd:
+    name: k3s-agent
+    state: started
+    enabled: true
+    daemon_reload: true
 
 - name: Label Worker Node with Zone (City)
   command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/zone={{ inventory_hostname[:3] }} --overwrite
