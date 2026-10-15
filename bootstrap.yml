@@ -1,8 +1,0 @@
----
-- name: Bootstrap Fresh Servers
-  hosts: all
-  become: true
-  gather_facts: false # Might fail if python is missing, we install it first
-
-  roles:
-    - bootstrap

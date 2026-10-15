@@ -4,9 +4,6 @@
     name: ssh
     state: restarted
 
-- name: Reload Firewall
-  shell: netfilter-persistent reload
-
 - name: Restart Fail2Ban
   service:
     name: fail2ban

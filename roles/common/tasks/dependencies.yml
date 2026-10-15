@@ -2,9 +2,13 @@
 - name: Install system dependencies (Common)
   apt:
     name:
+      - bash
+      - sudo
+      - python3
       - curl
       - gnupg
       - ca-certificates
+      - iptables
       - htop
       - systemd-timesyncd
       - fail2ban

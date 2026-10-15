@@ -1,58 +1,70 @@
 ---
-- name: Ensure iptables directory exists
+- name: Ensure /etc/iptables directory exists
   file:
     path: /etc/iptables
     state: directory
     mode: '0755'
 
-
-# 1. Deploy deterministic static firewall templates for boot persistence
-- name: Deploy static IPv4 firewall rules template
+- name: Deploy IPv4 firewall rules template
   template:
     src: rules.v4.j2
     dest: /etc/iptables/rules.v4
     mode: '0600'
 
-- name: Deploy static IPv6 firewall rules template
+- name: Deploy IPv6 firewall rules template
   template:
     src: rules.v6.j2
     dest: /etc/iptables/rules.v6
     mode: '0600'
 
-# 2. Setup Chains & Policies for current running kernel
-- import_tasks: setup.yml
+- name: Deploy safe firewall apply script (preserves K3s chains)
+  copy:
+    dest: /usr/local/sbin/apply-ansible-firewall.sh
+    mode: '0755'
+    content: |
+      #!/bin/sh
+      set -e
 
-# 4. Cluster Rules (K8s, WireGuard, NodePorts, Node-to-node whitelists)
-- include_tasks: cluster.yml
+      # --- IPv4 ---
+      if [ -f /etc/iptables/rules.v4 ]; then
+        /sbin/iptables -N ANSIBLE-FW 2>/dev/null || /sbin/iptables -F ANSIBLE-FW
+        {
+          echo "*filter"
+          grep "^-A ANSIBLE-FW" /etc/iptables/rules.v4
+          echo "COMMIT"
+        } | /sbin/iptables-restore --noflush
 
-# 5. App Rules
-- import_tasks: ingress.yml
+        /sbin/iptables -C INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || /sbin/iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+        /sbin/iptables -C INPUT -i lo -j ACCEPT 2>/dev/null || /sbin/iptables -A INPUT -i lo -j ACCEPT
+        /sbin/iptables -C INPUT -p tcp -m tcp --dport 22 -j ACCEPT 2>/dev/null || /sbin/iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+        /sbin/iptables -C INPUT -j ANSIBLE-FW 2>/dev/null || /sbin/iptables -A INPUT -j ANSIBLE-FW
+        /sbin/iptables -P INPUT DROP
+      fi
 
-# 6. Tailscale Rules
-- import_tasks: tailscale.yml
+      # --- IPv6 ---
+      if [ -f /etc/iptables/rules.v6 ]; then
+        /sbin/ip6tables -N ANSIBLE-FW6 2>/dev/null || /sbin/ip6tables -F ANSIBLE-FW6
+        {
+          echo "*filter"
+          grep "^-A ANSIBLE-FW6" /etc/iptables/rules.v6
+          echo "COMMIT"
+        } | /sbin/ip6tables-restore --noflush
 
-# 7. DERP Rules
-- import_tasks: derp.yml
+        /sbin/ip6tables -C INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || /sbin/ip6tables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+        /sbin/ip6tables -C INPUT -i lo -j ACCEPT 2>/dev/null || /sbin/ip6tables -A INPUT -i lo -j ACCEPT
+        /sbin/ip6tables -C INPUT -p tcp -m tcp --dport 22 -j ACCEPT 2>/dev/null || /sbin/ip6tables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+        /sbin/ip6tables -C INPUT -j ANSIBLE-FW6 2>/dev/null || /sbin/ip6tables -A INPUT -j ANSIBLE-FW6
+        /sbin/ip6tables -P INPUT DROP
+      fi
 
-# 8. Final Drop Rule
-- name: Drop at end of ANSIBLE-FW
-  ansible.builtin.iptables:
-    chain: ANSIBLE-FW
-    jump: DROP
-    action: append
-    ip_version: ipv4
+- name: Apply firewall rules to running kernel
+  command: /usr/local/sbin/apply-ansible-firewall.sh
+  changed_when: false
 
-- name: Drop at end of ANSIBLE-FW6
-  ansible.builtin.iptables:
-    chain: ANSIBLE-FW6
-    jump: DROP
-    action: append
-    ip_version: ipv6
-
-# 9. Deploy systemd oneshot service for boot persistence
-- name: Deploy systemd oneshot service for firewall persistence
+- name: Deploy systemd service for firewall persistence on boot
   copy:
     dest: /etc/systemd/system/ansible-firewall.service
+    mode: '0644'
     content: |
       [Unit]
       Description=Restore ANSIBLE-FW Host Firewall Rules
@@ -62,12 +74,11 @@
 
       [Service]
       Type=oneshot
-      ExecStart=/bin/sh -c '[ -f /etc/iptables/rules.v4 ] && /sbin/iptables-restore /etc/iptables/rules.v4 || true; [ -f /etc/iptables/rules.v6 ] && /sbin/ip6tables-restore /etc/iptables/rules.v6 || true'
+      ExecStart=/usr/local/sbin/apply-ansible-firewall.sh
       RemainAfterExit=yes
 
       [Install]
       WantedBy=multi-user.target
-    mode: '0644'
 
 - name: Enable ansible-firewall systemd service
   systemd:

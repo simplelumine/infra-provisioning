@@ -1,2 +1,53 @@
 ---
-- import_tasks: k3s_worker.yml
+- name: Check if Leader Host and WireGuard IP are Defined
+  fail:
+    msg: "k3s_leader_host and wg_ip variables must be defined"
+  when: k3s_leader_host is not defined or wg_ip is not defined
+
+- name: Check current K3s version
+  command: k3s --version
+  register: k3s_current_version
+  changed_when: false
+  failed_when: false
+
+- name: Fetch K3s Token from Leader
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  delegate_to: "{{ k3s_leader_host }}"
+  register: k3s_token_slurp
+  become: true
+
+- name: Install/Upgrade K3s Agent (bound to Kernel WireGuard interface)
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - agent \
+    --server https://{{ hostvars[k3s_leader_host]['wg_ip'] }}:6443 \
+    --token {{ k3s_token_slurp.content | b64decode | trim }} \
+    --node-ip {{ wg_ip }} \
+    --flannel-iface {{ wireguard_interface | default('wg0') }} \
+    --kubelet-arg="fail-swap-on=false"
+  when: >
+    k3s_current_version.rc != 0 or
+    k3s_install_version not in k3s_current_version.stdout or
+    k3s_force_reinstall | default(false) | bool
+
+- name: Label Worker Node with Zone (City)
+  command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/zone={{ inventory_hostname[:3] }} --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: zone_label_result
+  until: zone_label_result.rc == 0
+  retries: 10
+  delay: 3
+  changed_when: "'not labeled' not in zone_label_result.stdout"
+
+- name: Label Worker Node with Region
+  command: kubectl label node {{ inventory_hostname }} topology.kubernetes.io/region={{ node_region | default('us-west') }} --overwrite
+  delegate_to: "{{ k3s_leader_host }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: region_label_result
+  until: region_label_result.rc == 0
+  retries: 10
+  delay: 3
+  changed_when: "'not labeled' not in region_label_result.stdout"

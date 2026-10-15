@@ -47,6 +47,7 @@
     src: conf.d/xray.yml.j2
     dest: /etc/traefik/conf.d/xray.yml
     mode: '0644'
+  when: xray_enabled | default(false) | bool
   notify: Restart Traefik
 
 - name: Configure DERP HTTPS dynamic routing

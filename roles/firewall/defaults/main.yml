@@ -1,27 +1,17 @@
 ---
 # Firewall Defaults
 
-# Enable/Disable features
+# Enable/Disable features (auto-derived from role flags by default)
 firewall_enable_ingress: true
-firewall_enable_tailscale_trust: true
-firewall_enable_cluster_trust: false
+firewall_enable_tailscale_trust: "{{ tailscale_enabled | default(false) }}"
+firewall_enable_cluster_trust: "{{ wireguard_enabled | default(false) }}"
 firewall_enable_nodeports: false
 
-# Tailscale DERP
+# WireGuard settings
+wireguard_interface: wg0
+wireguard_port: 51820
+
+# Tailscale & DERP
+tailscale_peer_relay_port: 41641
 tailscale_derp_enabled: false
 tailscale_derp_stun_port: 3478
-
-# Public TCP Ports (Only applied if firewall_enable_cluster_trust is true)
-firewall_allowed_tcp_ports:
-  - 6443   # Kubernetes API Server
-  - "{{ xray_port_tcp | default(8443) }}"   # Xray Reality
-
-# Cluster Internal TCP Ports (Restricted to groups['cluster'] nodes)
-firewall_cluster_internal_tcp_ports:
-  - 10250  # Kubelet API / Metrics
-  - 9100   # Prometheus Node Exporter
-
-# Allowed UDP Ports (Flannel WireGuard)
-# Only applied if firewall_enable_cluster_trust is true
-firewall_allowed_udp_ports:
-  - 51820  # Flannel WireGuard Native

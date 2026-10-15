@@ -1,60 +1,63 @@
 ---
-- name: Install Tailscale
-  shell: |
-    curl -fsSL https://tailscale.com/install.sh | sh
-  args:
-    creates: /usr/bin/tailscale
+- name: Configure Tailscale
+  when: tailscale_enabled | default(false) | bool
+  block:
+    - name: Install Tailscale
+      shell: |
+        curl -fsSL https://tailscale.com/install.sh | sh
+      args:
+        creates: /usr/bin/tailscale
 
-- name: Upgrade Tailscale to latest
-  apt:
-    name: tailscale
-    state: latest
-    update_cache: true
+    - name: Upgrade Tailscale to latest
+      apt:
+        name: tailscale
+        state: latest
+        update_cache: true
 
-- name: Enable IPv4 and IPv6 forwarding for Tailscale
-  sysctl:
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-    sysctl_file: /etc/sysctl.d/99-tailscale.conf
-    sysctl_set: true
-    state: present
-    reload: true
-  loop:
-    - { name: "net.ipv4.ip_forward", value: "1" }
-    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
+    - name: Enable IPv4 and IPv6 forwarding for Tailscale
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/99-tailscale.conf
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { name: "net.ipv4.ip_forward", value: "1" }
+        - { name: "net.ipv6.conf.all.forwarding", value: "1" }
 
-- name: Ensure Tailscale service is running
-  service:
-    name: tailscaled
-    state: started
-    enabled: true
+    - name: Ensure Tailscale service is running
+      service:
+        name: tailscaled
+        state: started
+        enabled: true
 
-- name: Check Tailscale Status
-  command: tailscale status --json
-  register: ts_status
-  failed_when: false
-  changed_when: false
+    - name: Check Tailscale Status
+      command: tailscale status --json
+      register: ts_status
+      failed_when: false
+      changed_when: false
 
-- name: Authenticate Tailscale
-  command: tailscale up --authkey={{ tailscale_auth_key }} --reset
-  when: >
-    tailscale_auth_key is defined and
-    tailscale_auth_key | length > 0 and
-    (ts_status.rc != 0 or
-     (ts_status.stdout | default('{}') | from_json).BackendState | default('') not in ['Running', 'Starting'])
-  register: tailscale_up
-  changed_when: tailscale_up.rc == 0
+    - name: Authenticate Tailscale
+      command: tailscale up --authkey={{ tailscale_auth_key }} --reset
+      when: >
+        tailscale_auth_key is defined and
+        tailscale_auth_key | length > 0 and
+        (ts_status.rc != 0 or
+         (ts_status.stdout | default('{}') | from_json).BackendState | default('') not in ['Running', 'Starting'])
+      register: tailscale_up
+      changed_when: tailscale_up.rc == 0
 
-- name: Configure Tailscale DNS acceptance
-  command: tailscale set --accept-dns={{ tailscale_accept_dns | bool | lower }}
-  changed_when: false
+    - name: Configure Tailscale DNS acceptance
+      command: tailscale set --accept-dns={{ tailscale_accept_dns | bool | lower }}
+      changed_when: false
 
-- name: Enable Tailscale Peer Relay
-  command: tailscale set --relay-server-port {{ tailscale_peer_relay_port }}
-  when: tailscale_enable_peer_relay | default(false)
-  changed_when: false # tailscale set is usually idempotent-ish
+    - name: Enable Tailscale Peer Relay
+      command: tailscale set --relay-server-port {{ tailscale_peer_relay_port }}
+      when: tailscale_enable_peer_relay | default(false)
+      changed_when: false
 
-- name: Advertise as Exit Node (Optional)
-  command: tailscale set --advertise-exit-node
-  when: tailscale_advertise_exit_node | default(false)
-  changed_when: false # It's idempotent
+    - name: Advertise as Exit Node (Optional)
+      command: tailscale set --advertise-exit-node
+      when: tailscale_advertise_exit_node | default(false)
+      changed_when: false

@@ -1,11 +1,15 @@
 ---
-- name: Enable IPv4 forwarding
+- name: Enable IPv4 and IPv6 forwarding for Kubernetes
   sysctl:
-    name: net.ipv4.ip_forward
-    value: "1"
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-k8s.conf
     sysctl_set: true
     state: present
     reload: true
+  loop:
+    - { name: "net.ipv4.ip_forward", value: "1" }
+    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
 
 - name: Load Kernel Modules
   modprobe:
@@ -23,17 +27,16 @@
       br_netfilter
       wireguard
     dest: /etc/modules-load.d/k8s.conf
+    mode: '0644'
 
-
-# Populate /etc/hosts with cluster node public IPs
-# This ensures K3s nodes communicate via public IP, not Tailscale MagicDNS
-- name: Add cluster nodes to /etc/hosts
+# Populate /etc/hosts with cluster node WireGuard internal IPs
+- name: Add cluster nodes to /etc/hosts (WireGuard Internal IPs)
   blockinfile:
     path: /etc/hosts
     marker: "# {mark} ANSIBLE MANAGED - K3S CLUSTER NODES"
     block: |
       {% for host in groups['cluster'] | default([]) %}
-      {% if hostvars[host]['ansible_host'] is defined %}
-      {{ hostvars[host]['ansible_host'] }} {{ host }}
+      {% if hostvars[host]['wg_ip'] is defined %}
+      {{ hostvars[host]['wg_ip'] }} {{ host }}
       {% endif %}
       {% endfor %}

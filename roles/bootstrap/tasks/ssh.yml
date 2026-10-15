@@ -1,9 +1,0 @@
----
-- name: Ensure PubkeyAuthentication is enabled
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PubkeyAuthentication'
-    line: 'PubkeyAuthentication yes'
-    state: present
-  notify: Restart SSH
-

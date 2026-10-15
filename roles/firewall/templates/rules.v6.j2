@@ -16,17 +16,11 @@
 -A ANSIBLE-FW6 -p ipv6-icmp -j ACCEPT
 
 {% if firewall_enable_cluster_trust | bool %}
-# Flannel WireGuard & CNI interfaces
--A ANSIBLE-FW6 -i flannel-wg -j ACCEPT
+# Kernel WireGuard UDP port & trusted cluster interfaces
+-A ANSIBLE-FW6 -p udp -m udp --dport {{ wireguard_port | default(51820) }} -j ACCEPT
+-A ANSIBLE-FW6 -i {{ wireguard_interface | default('wg0') }} -j ACCEPT
 -A ANSIBLE-FW6 -i cni0 -j ACCEPT
-
-# Public K3s / WireGuard ports
-{% for port in firewall_allowed_tcp_ports %}
--A ANSIBLE-FW6 -p tcp -m tcp --dport {{ port }} -j ACCEPT
-{% endfor %}
-{% for port in firewall_allowed_udp_ports %}
--A ANSIBLE-FW6 -p udp -m udp --dport {{ port }} -j ACCEPT
-{% endfor %}
+-A ANSIBLE-FW6 -i flannel.1 -j ACCEPT
 {% endif %}
 
 {% if firewall_enable_nodeports | bool %}
@@ -37,6 +31,10 @@
 {% if firewall_enable_ingress | bool %}
 -A ANSIBLE-FW6 -p tcp -m tcp --dport 80 -j ACCEPT
 -A ANSIBLE-FW6 -p tcp -m tcp --dport 443 -j ACCEPT
+{% endif %}
+
+{% if (xray_enabled | default(false) | bool) and (xray_open_firewall | default('edge' not in group_names) | bool) and (xray_port_tcp | default('') | string | length > 0) %}
+-A ANSIBLE-FW6 -p tcp -m tcp --dport {{ xray_port_tcp }} -j ACCEPT
 {% endif %}
 
 {% if firewall_enable_tailscale_trust | bool %}

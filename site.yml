@@ -1,3 +1,4 @@
+---
 - name: Apply Base Configuration (All Nodes)
   hosts: all
   become: true
@@ -7,6 +8,8 @@
       tags: common
     - role: tailscale
       tags: tailscale
+    - role: wireguard
+      tags: wireguard
     - role: firewall
       tags: firewall
 
@@ -33,8 +36,8 @@
       tags: xray
     - role: k8s_prereqs
       tags: k8s_prereqs
-    - role: k3s_control_default
-      tags: k3s_control_default
+    - role: k3s_control
+      tags: k3s_control
 
 - name: Configure Worker Nodes
   hosts: worker_nodes

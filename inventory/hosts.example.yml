@@ -1,0 +1,42 @@
+---
+all:
+  vars:
+    # Default SSH user for regular VPS providers (override per-host/group as needed)
+    ansible_user: root
+
+  children:
+    edge:
+      hosts:
+        lax-edge-01:
+          ansible_host: 203.0.113.10
+          ansible_user: root
+
+    control_plane:
+      hosts:
+        pdx-cp-01:
+          # Can use temporary IPv4 initially, then switch directly to IPv6 later
+          ansible_host: 34.100.0.1
+          # GCP default user (auto-configured with passwordless sudo by GCP)
+          ansible_user: simplelumine
+          # Internal Kernel WireGuard IP (never changes even when public v4 is removed)
+          wg_ip: 10.100.0.1
+          # Optional: Use IPv6 directly for WireGuard underlay from Day 1
+          # wg_endpoint: "2600:1900:4000:xxxx::1"
+
+    worker_nodes:
+      hosts:
+        sjc-wk-01:
+          ansible_host: 198.51.100.21
+          ansible_user: root
+          wg_ip: 10.100.0.11
+          # wg_endpoint: "2604:a880:400:d0::xxxx"
+        lax-wk-01:
+          ansible_host: 198.51.100.22
+          ansible_user: root
+          wg_ip: 10.100.0.12
+          # wg_endpoint: "2604:a880:400:d0::yyyy"
+
+    cluster:
+      children:
+        control_plane:
+        worker_nodes:
