@@ -1,7 +1,6 @@
 ---
-tailscale_derp_enabled: false
 tailscale_derp_hostname: ""  # e.g., relay.simplelumine.com (used by Traefik)
-tailscale_derp_http_port: 3340  # Internal port, Traefik proxies to this
+tailscale_derp_http_port: 8443  # Internal port, Traefik proxies to this
 tailscale_derp_stun_port: 3478
 tailscale_derp_verify_clients: true
 
@@ -11,4 +10,3 @@ derp_go_arch_map:
   x86_64: "amd64"
   aarch64: "arm64"
 derp_go_arch: "{{ derp_go_arch_map[ansible_architecture] | default('amd64') }}"
-

@@ -1,9 +1,8 @@
 ---
-xray_enabled: false
-xray_port_tcp: ""  # Must be defined in group_vars when enabled
+xray_port_tcp: 8443
 xray_clients: []
 xray_host_clients: []  # Per-host clients (optional, merged with global)
-xray_private_key: ""  # Must be defined in group_vars or secrets
+xray_private_key: ""
 
 # REALITY Configuration
 xray_reality_dest: ""

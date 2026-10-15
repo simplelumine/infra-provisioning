@@ -1,5 +1,5 @@
 # Traefik HTTPS Reverse Proxy for Tailscale DERP - Managed by Ansible
-{% if tailscale_derp_enabled | default(false) | bool and tailscale_derp_hostname | default('') != '' %}
+{% if tailscale_derp_hostname | default('') != '' %}
 http:
   routers:
     derp-relay:

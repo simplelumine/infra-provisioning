@@ -13,6 +13,5 @@
 inventory/**/*
 !inventory/**/
 !inventory/**/*.example.yml
-!inventory/**/*.example.ini
 config.yaml
 .kube

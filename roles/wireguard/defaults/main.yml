@@ -1,9 +1,9 @@
 ---
-wireguard_enabled: false
 wireguard_interface: wg0
 wireguard_port: 51820
-wireguard_netmask: 24
+# /16 allows clean subnetting across node roles (e.g. 10.100.0.x for cluster, 10.100.1.x for edge)
+wireguard_netmask: 16
 # 1380 is optimal for IPv6 WireGuard over GCP VPC (1460 MTU - 80B IPv6 WG header)
 wireguard_mtu: 1380
 wireguard_persistent_keepalive: 25
-wireguard_peer_group: cluster
+wireguard_peer_group: wireguard

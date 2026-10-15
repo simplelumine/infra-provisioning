@@ -1,51 +1,83 @@
 ---
-- name: Apply Base Configuration (All Nodes)
+- name: Apply Base System Configuration
   hosts: all
   become: true
   gather_facts: true
   roles:
     - role: common
       tags: common
+
+- name: Configure Tailscale Mesh
+  hosts: tailscale
+  become: true
+  gather_facts: true
+  roles:
     - role: tailscale
       tags: tailscale
+
+- name: Configure Kernel WireGuard Mesh
+  hosts: wireguard
+  become: true
+  gather_facts: true
+  roles:
     - role: wireguard
       tags: wireguard
+
+- name: Configure Host Firewall
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
     - role: firewall
       tags: firewall
 
-- name: Configure Edge Nodes
+- name: Configure Edge Gateway (Traefik)
   hosts: edge
   become: true
   gather_facts: true
   roles:
     - role: traefik
       tags: traefik
-    - role: xray
-      tags: xray
+
+- name: Configure Tailscale DERP Relay
+  hosts: derp
+  become: true
+  gather_facts: true
+  roles:
     - role: derp
       tags: derp
+
+- name: Configure Prometheus Node Exporter
+  hosts: node_exporter
+  become: true
+  gather_facts: true
+  roles:
     - role: node_exporter
       tags: node_exporter
 
-- name: Configure Control Plane
-  hosts: control_plane
+- name: Configure Xray Service
+  hosts: xray
   become: true
   gather_facts: true
   roles:
     - role: xray
       tags: xray
+
+- name: Configure Kubernetes Control Plane
+  hosts: control_plane
+  become: true
+  gather_facts: true
+  roles:
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_control
       tags: k3s_control
 
-- name: Configure Worker Nodes
+- name: Configure Kubernetes Worker Nodes
   hosts: worker_nodes
   become: true
   gather_facts: true
   roles:
-    - role: xray
-      tags: xray
     - role: k8s_prereqs
       tags: k8s_prereqs
     - role: k3s_worker

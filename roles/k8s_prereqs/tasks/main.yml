@@ -28,15 +28,3 @@
       wireguard
     dest: /etc/modules-load.d/k8s.conf
     mode: '0644'
-
-# Populate /etc/hosts with cluster node WireGuard internal IPs
-- name: Add cluster nodes to /etc/hosts (WireGuard Internal IPs)
-  blockinfile:
-    path: /etc/hosts
-    marker: "# {mark} ANSIBLE MANAGED - K3S CLUSTER NODES"
-    block: |
-      {% for host in groups['cluster'] | default([]) %}
-      {% if hostvars[host]['wg_ip'] is defined %}
-      {{ hostvars[host]['wg_ip'] }} {{ host }}
-      {% endif %}
-      {% endfor %}

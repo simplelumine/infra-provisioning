@@ -1,78 +1,75 @@
 ---
-- name: Configure Xray
-  when: xray_enabled | default(false) | bool
-  block:
-    - name: Create Xray directory
-      file:
-        path: /usr/local/etc/xray
-        state: directory
-        mode: '0755'
+- name: Create Xray directory
+  file:
+    path: /usr/local/etc/xray
+    state: directory
+    mode: '0755'
 
-    - name: Install Xray (first time)
-      shell: |
-        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
-      args:
-        creates: /usr/local/bin/xray
+- name: Install Xray (first time)
+  shell: |
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+  args:
+    creates: /usr/local/bin/xray
 
-    - name: Update Xray to latest version
-      shell: |
-        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
-      register: xray_update_result
-      changed_when: "'installed' in xray_update_result.stdout or 'upgraded' in xray_update_result.stdout"
-      notify: Restart Xray
+- name: Update Xray to latest version
+  shell: |
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+  register: xray_update_result
+  changed_when: "'installed' in xray_update_result.stdout or 'upgraded' in xray_update_result.stdout"
+  notify: Restart Xray
 
-    - name: Deploy Xray auto-update systemd service
-      copy:
-        dest: /etc/systemd/system/xray-update.service
-        mode: '0644'
-        content: |
-          [Unit]
-          Description=Xray Auto Update
-          After=network-online.target
-          Wants=network-online.target
+- name: Deploy Xray auto-update systemd service
+  copy:
+    dest: /etc/systemd/system/xray-update.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Xray Auto Update
+      After=network-online.target
+      Wants=network-online.target
 
-          [Service]
-          Type=oneshot
-          ExecStart=/bin/bash -c '"$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install'
-          ExecStartPost=/bin/systemctl restart xray
-      notify: Reload systemd
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c '"$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install'
+      ExecStartPost=/bin/systemctl restart xray
+  notify: Reload systemd
 
-    - name: Deploy Xray auto-update systemd timer
-      copy:
-        dest: /etc/systemd/system/xray-update.timer
-        mode: '0644'
-        content: |
-          [Unit]
-          Description=Weekly Xray Auto Update
+- name: Deploy Xray auto-update systemd timer
+  copy:
+    dest: /etc/systemd/system/xray-update.timer
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Weekly Xray Auto Update
 
-          [Timer]
-          OnCalendar=weekly
-          RandomizedDelaySec=3600
-          Persistent=true
+      [Timer]
+      OnCalendar=weekly
+      RandomizedDelaySec=3600
+      Persistent=true
 
-          [Install]
-          WantedBy=timers.target
-      notify: Reload systemd
+      [Install]
+      WantedBy=timers.target
+  notify: Reload systemd
 
-    - name: Render Xray configuration
-      template:
-        src: xray_config.json.j2
-        dest: /usr/local/etc/xray/config.json
-        mode: '0644'
-        validate: '/usr/local/bin/xray -test -format json -config %s'
-      notify: Restart Xray
+- name: Render Xray configuration
+  template:
+    src: xray_config.json.j2
+    dest: /usr/local/etc/xray/config.json
+    mode: '0644'
+    validate: '/usr/local/bin/xray -test -format json -config %s'
+  notify: Restart Xray
 
-    - name: Force immediate handler execution
-      meta: flush_handlers
+- name: Force immediate handler execution
+  meta: flush_handlers
 
-    - name: Ensure Xray is running
-      service:
-        name: xray
-        state: started
-        enabled: true
+- name: Ensure Xray is running
+  service:
+    name: xray
+    state: started
+    enabled: true
 
-    - name: Enable Xray auto-update timer
-      service:
-        name: xray-update.timer
-        state: started
-        enabled: true
+- name: Enable Xray auto-update timer
+  service:
+    name: xray-update.timer
+    state: started
+    enabled: true

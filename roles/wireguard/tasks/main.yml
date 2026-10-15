@@ -1,90 +1,98 @@
 ---
-- name: Configure Kernel WireGuard Mesh
-  when: wireguard_enabled | default(false) | bool
-  block:
-    - name: Ensure wg_ip is defined for this host
-      fail:
-        msg: "wg_ip must be defined in inventory for host {{ inventory_hostname }} when wireguard_enabled is true"
-      when: wg_ip is not defined or wg_ip | length == 0
+- name: Ensure wg_ip is defined for this host
+  fail:
+    msg: "wg_ip must be defined in inventory for host {{ inventory_hostname }}"
+  when: wg_ip is not defined or wg_ip | length == 0
 
-    - name: Install WireGuard tools
-      apt:
-        name:
-          - wireguard-tools
-        state: present
-        update_cache: true
+- name: Install WireGuard tools
+  apt:
+    name:
+      - wireguard-tools
+    state: present
+    update_cache: true
 
-    - name: Load WireGuard kernel module
-      modprobe:
-        name: wireguard
-        state: present
+- name: Load WireGuard kernel module
+  modprobe:
+    name: wireguard
+    state: present
 
-    - name: Ensure WireGuard kernel module loads on boot
-      copy:
-        dest: /etc/modules-load.d/wireguard.conf
-        content: "wireguard\n"
-        mode: '0644'
+- name: Ensure WireGuard kernel module loads on boot
+  copy:
+    dest: /etc/modules-load.d/wireguard.conf
+    content: "wireguard\n"
+    mode: '0644'
 
-    - name: Enable IPv4 and IPv6 forwarding
-      sysctl:
-        name: "{{ item.name }}"
-        value: "{{ item.value }}"
-        sysctl_file: /etc/sysctl.d/99-wireguard.conf
-        sysctl_set: true
-        state: present
-        reload: true
-      loop:
-        - { name: "net.ipv4.ip_forward", value: "1" }
-        - { name: "net.ipv6.conf.all.forwarding", value: "1" }
+- name: Enable IPv4 and IPv6 forwarding
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-wireguard.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  loop:
+    - { name: "net.ipv4.ip_forward", value: "1" }
+    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
 
-    - name: Ensure /etc/wireguard directory exists
-      file:
-        path: /etc/wireguard
-        state: directory
-        owner: root
-        group: root
-        mode: '0700'
+- name: Ensure /etc/wireguard directory exists
+  file:
+    path: /etc/wireguard
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
 
-    - name: Generate WireGuard private key
-      shell: umask 077 && wg genkey > /etc/wireguard/private.key
-      args:
-        creates: /etc/wireguard/private.key
+- name: Generate WireGuard private key
+  shell: umask 077 && wg genkey > /etc/wireguard/private.key
+  args:
+    creates: /etc/wireguard/private.key
 
-    - name: Generate WireGuard public key
-      shell: umask 077 && wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
-      args:
-        creates: /etc/wireguard/public.key
+- name: Generate WireGuard public key
+  shell: umask 077 && wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
+  args:
+    creates: /etc/wireguard/public.key
 
-    - name: Read WireGuard private key
-      slurp:
-        src: /etc/wireguard/private.key
-      register: wg_privkey_raw
+- name: Read WireGuard private key
+  slurp:
+    src: /etc/wireguard/private.key
+  register: wg_privkey_raw
 
-    - name: Read WireGuard public key
-      slurp:
-        src: /etc/wireguard/public.key
-      register: wg_pubkey_raw
+- name: Read WireGuard public key
+  slurp:
+    src: /etc/wireguard/public.key
+  register: wg_pubkey_raw
 
-    - name: Set WireGuard key facts
-      set_fact:
-        wg_private_key: "{{ wg_privkey_raw.content | b64decode | trim }}"
-        wg_public_key: "{{ wg_pubkey_raw.content | b64decode | trim }}"
+- name: Set WireGuard key facts
+  set_fact:
+    wg_private_key: "{{ wg_privkey_raw.content | b64decode | trim }}"
+    wg_public_key: "{{ wg_pubkey_raw.content | b64decode | trim }}"
 
-    - name: Render WireGuard interface configuration
-      template:
-        src: wg0.conf.j2
-        dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
-        owner: root
-        group: root
-        mode: '0600'
-      notify: Restart WireGuard
+- name: Render WireGuard interface configuration
+  template:
+    src: wg0.conf.j2
+    dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Restart WireGuard
 
-    - name: Flush handlers to apply WireGuard config immediately
-      meta: flush_handlers
+- name: Flush handlers to apply WireGuard config immediately
+  meta: flush_handlers
 
-    - name: Ensure WireGuard service is enabled and started
-      systemd:
-        name: "wg-quick@{{ wireguard_interface }}"
-        state: started
-        enabled: true
-        daemon_reload: true
+- name: Ensure WireGuard service is enabled and started
+  systemd:
+    name: "wg-quick@{{ wireguard_interface }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Populate /etc/hosts with WireGuard mesh peers
+  blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED - WIREGUARD MESH NODES"
+    block: |
+      {% for host in groups[wireguard_peer_group] | default([]) %}
+      {% if hostvars[host]['wg_ip'] is defined %}
+      {{ hostvars[host]['wg_ip'] }} {{ host }}
+      {% endif %}
+      {% endfor %}

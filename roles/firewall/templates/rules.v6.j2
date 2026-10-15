@@ -12,37 +12,35 @@
 -A INPUT -j ANSIBLE-FW6
 
 # ANSIBLE-FW6 Chain Rules
--A ANSIBLE-FW6 -i lo -j ACCEPT
 -A ANSIBLE-FW6 -p ipv6-icmp -j ACCEPT
 
-{% if firewall_enable_cluster_trust | bool %}
-# Kernel WireGuard UDP port & trusted cluster interfaces
+{% if 'wireguard' in group_names %}
+# Kernel WireGuard UDP port & trusted WireGuard interface
 -A ANSIBLE-FW6 -p udp -m udp --dport {{ wireguard_port | default(51820) }} -j ACCEPT
 -A ANSIBLE-FW6 -i {{ wireguard_interface | default('wg0') }} -j ACCEPT
+{% endif %}
+
+{% if 'cluster' in group_names %}
+# Kubernetes CNI interfaces
 -A ANSIBLE-FW6 -i cni0 -j ACCEPT
 -A ANSIBLE-FW6 -i flannel.1 -j ACCEPT
 {% endif %}
 
-{% if firewall_enable_nodeports | bool %}
--A ANSIBLE-FW6 -p tcp -m tcp --dport 30000:32767 -j ACCEPT
--A ANSIBLE-FW6 -p udp -m udp --dport 30000:32767 -j ACCEPT
-{% endif %}
-
-{% if firewall_enable_ingress | bool %}
+{% if firewall_enable_ingress | default(true) | bool %}
 -A ANSIBLE-FW6 -p tcp -m tcp --dport 80 -j ACCEPT
 -A ANSIBLE-FW6 -p tcp -m tcp --dport 443 -j ACCEPT
 {% endif %}
 
-{% if (xray_enabled | default(false) | bool) and (xray_open_firewall | default('edge' not in group_names) | bool) and (xray_port_tcp | default('') | string | length > 0) %}
+{% if 'xray' in group_names and 'edge' not in group_names and (xray_port_tcp | default('') | string | length > 0) %}
 -A ANSIBLE-FW6 -p tcp -m tcp --dport {{ xray_port_tcp }} -j ACCEPT
 {% endif %}
 
-{% if firewall_enable_tailscale_trust | bool %}
+{% if 'tailscale' in group_names %}
 -A ANSIBLE-FW6 -i tailscale0 -j ACCEPT
 -A ANSIBLE-FW6 -p udp -m udp --dport {{ tailscale_peer_relay_port | default(41641) }} -j ACCEPT
 {% endif %}
 
-{% if tailscale_derp_enabled | default(false) | bool %}
+{% if 'derp' in group_names %}
 -A ANSIBLE-FW6 -p udp -m udp --dport {{ tailscale_derp_stun_port | default(3478) }} -j ACCEPT
 {% endif %}
 

@@ -1,24 +1,55 @@
 ---
 all:
   vars:
-    # Default SSH user for regular VPS providers (override per-host/group as needed)
+    # Default SSH settings (override per-host or per-group as needed)
     ansible_user: root
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    # --- Global Traefik Settings ---
+    traefik_acme_email: "admin@example.com"
+
+    # --- Global Xray REALITY Settings & Secrets ---
+    xray_private_key: "YOUR_XRAY_PRIVATE_KEY"
+    xray_short_ids:
+      - "0123456789abcdef"
+    xray_reality_dest: "www.example.com:443"
+    xray_reality_server_names:
+      - "www.example.com"
+    xray_clients:
+      - id: "00000000-0000-0000-0000-000000000000"
+        email: "admin"
+        level: 0
 
   children:
+    # ==========================================================
+    # 1. Node Definitions (Topology & Host/Group Variables)
+    # ==========================================================
     edge:
       hosts:
-        lax-edge-01:
+        lax-eg-01:
           ansible_host: 203.0.113.10
-          ansible_user: root
+          wg_ip: 10.100.1.1
+          tailscale_enable_peer_relay: true
+          tailscale_derp_hostname: "lax-relay.example.com"
+          traefik_sites:
+            - domain: "app.example.com"
+              upstream: "http://100.64.0.10:8080"
+
+      vars:
+        tailscale_auth_key: "tskey-auth-xxxxx"
+        tailscale_advertise_exit_node: true
+        tailscale_derp_http_port: 8443
+        tailscale_derp_stun_port: 3478
+        xray_port_tcp: 10000
 
     control_plane:
       hosts:
         pdx-cp-01:
           # Can use temporary IPv4 initially, then switch directly to IPv6 later
           ansible_host: 34.100.0.1
-          # GCP default user (auto-configured with passwordless sudo by GCP)
+          # Cloud provider default user (e.g. GCP auto-creates user with passwordless sudo)
           ansible_user: simplelumine
-          # Internal Kernel WireGuard IP (never changes even when public v4 is removed)
+          # Internal Kernel WireGuard IP (stays constant across IPv4 -> IPv6 transition)
           wg_ip: 10.100.0.1
           # Optional: Use IPv6 directly for WireGuard underlay from Day 1
           # wg_endpoint: "2600:1900:4000:xxxx::1"
@@ -27,16 +58,55 @@ all:
       hosts:
         sjc-wk-01:
           ansible_host: 198.51.100.21
-          ansible_user: root
           wg_ip: 10.100.0.11
           # wg_endpoint: "2604:a880:400:d0::xxxx"
         lax-wk-01:
           ansible_host: 198.51.100.22
-          ansible_user: root
           wg_ip: 10.100.0.12
           # wg_endpoint: "2604:a880:400:d0::yyyy"
 
+    # ==========================================================
+    # 2. Cluster Group (K3s Shared Vars)
+    # ==========================================================
     cluster:
       children:
         control_plane:
         worker_nodes:
+      vars:
+        tailscale_auth_key: "tskey-auth-yyyyy"
+        k3s_install_version: "v1.37.0+k3s1"
+        k3s_etcd_mode: true
+        k3s_etcd_s3_secret: "k3s-etcd_s3-config"
+        k3s_leader_host: "pdx-cp-01"
+        xray_port_tcp: 8443
+
+    # ==========================================================
+    # 3. Capability Groups (Controls Role Installation & Firewall)
+    # ==========================================================
+    wireguard:
+      children:
+        edge:
+        cluster:
+      vars:
+        wireguard_interface: wg0
+        wireguard_port: 51820
+        wireguard_netmask: 16
+        wireguard_mtu: 1380
+
+    tailscale:
+      children:
+        edge:
+        control_plane:
+
+    xray:
+      children:
+        edge:
+        worker_nodes:
+
+    derp:
+      children:
+        edge:
+
+    node_exporter:
+      children:
+        edge:
