@@ -39,7 +39,34 @@
     - { name: "net.ipv6.conf.default.accept_ra", value: "2" }
     - { name: "net.ipv6.conf.{{ ansible_default_ipv4.interface | default('eth0') }}.accept_ra", value: "2" }
     - { name: "net.ipv4.ip_forward", value: "1" }
-    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
+    - { name: "net.ipv6.conf.all.forwarding", value: "{{ '1' if (tailscale_advertise_exit_node | default(false) | bool) else '0' }}" }
+
+- name: Check if GCP Netplan all-en config exists
+  shell: grep -q "all-en:" /etc/netplan/*.yaml 2>/dev/null
+  register: gcp_netplan_default
+  changed_when: false
+  failed_when: false
+
+- name: Ensure Netplan explicitly enables accept-ra (IPv6AcceptRA=yes) for DHCPv6 renewal on GCP
+  copy:
+    dest: /etc/netplan/99-accept-ra.yaml
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          all-en:
+            accept-ra: true
+          all-eth:
+            accept-ra: true
+  register: gcp_accept_ra_configured
+  when: gcp_netplan_default.rc == 0
+
+- name: Apply Netplan accept-ra configuration
+  command: netplan apply
+  when: gcp_accept_ra_configured is changed
 
 - name: Check if global IPv6 address exists
   command: "ip -6 addr show dev {{ ansible_default_ipv4.interface | default('eth0') }} scope global"
@@ -63,6 +90,7 @@
         version: 2
         ethernets:
           {{ ansible_default_ipv4.interface | default('eth0') }}:
+            accept-ra: true
             addresses:
               - {{ ipv6_address }}
             routes:
@@ -85,7 +113,7 @@
   failed_when: false
 
 - name: Solicit IPv6 Router Advertisement (RA) if default route is missing
-  command: "rdisc6 -1 {{ ansible_default_ipv4.interface | default('eth0') }}"
+  command: "rdisc6 {{ ansible_default_ipv4.interface | default('eth0') }}"
   failed_when: false
   when:
     - ipv6_default_route.stdout | default('') | trim | length == 0

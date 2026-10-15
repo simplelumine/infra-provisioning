@@ -13,6 +13,7 @@
 
 # ANSIBLE-FW6 Chain Rules
 -A ANSIBLE-FW6 -p ipv6-icmp -j ACCEPT
+-A ANSIBLE-FW6 -p udp -m udp --dport 546 -j ACCEPT
 
 {% if 'wireguard' in group_names %}
 # Kernel WireGuard UDP port & trusted WireGuard interface
