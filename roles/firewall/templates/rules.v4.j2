@@ -42,7 +42,7 @@
 -A ANSIBLE-FW -p udp -m udp --dport {{ tailscale_peer_relay_port | default(41641) }} -j ACCEPT
 {% endif %}
 
-{% if 'derp' in group_names %}
+{% if tailscale_derp_enabled | default(false) | bool %}
 -A ANSIBLE-FW -p udp -m udp --dport {{ tailscale_derp_stun_port | default(3478) }} -j ACCEPT
 {% endif %}
 

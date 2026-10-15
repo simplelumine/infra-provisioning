@@ -30,13 +30,13 @@ all:
           ansible_host: 203.0.113.10
           wg_ip: 10.10.2.1
           tailscale_enable_peer_relay: true
+          tailscale_derp_enabled: true
           tailscale_derp_hostname: "lax-relay.example.com"
           traefik_sites:
             - domain: "app.example.com"
               upstream: "http://100.64.0.10:8080"
 
       vars:
-        tailscale_auth_key: "tskey-auth-xxxxx"
         tailscale_advertise_exit_node: true
         tailscale_derp_http_port: 8443
         tailscale_derp_stun_port: 3478
@@ -73,15 +73,14 @@ all:
         control_plane:
         worker_nodes:
       vars:
-        tailscale_auth_key: "tskey-auth-yyyyy"
         k3s_install_version: "v1.37.0+k3s1"
         k3s_etcd_mode: true
-        k3s_etcd_s3_secret: "k3s-etcd_s3-config"
+        k3s_etcd_s3_secret: "k3s-etcd-s3-config"
         k3s_leader_host: "pdx-cp-01"
         xray_port_tcp: 8443
 
     # ==========================================================
-    # 3. Capability Groups (Controls Role Installation & Firewall)
+    # 3. Capability Groups (Controls Cross-Cutting Roles)
     # ==========================================================
     wireguard:
       children:
@@ -97,16 +96,10 @@ all:
       children:
         edge:
         control_plane:
+      vars:
+        tailscale_auth_key: "tskey-auth-xxxxx"
 
     xray:
       children:
         edge:
         worker_nodes:
-
-    derp:
-      children:
-        edge:
-
-    node_exporter:
-      children:
-        edge:

@@ -55,7 +55,7 @@
     src: conf.d/derp.yml.j2
     dest: /etc/traefik/conf.d/derp.yml
     mode: '0644'
-  when: "'derp' in group_names"
+  when: tailscale_derp_enabled | default(false) | bool
   notify: Restart Traefik
 
 - name: Configure custom sites dynamic routing
