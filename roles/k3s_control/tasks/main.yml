@@ -105,10 +105,3 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: region_label_result
   changed_when: "'not labeled' not in region_label_result.stdout"
-
-- name: Taint Control Plane Node with NoSchedule
-  command: kubectl taint node {{ inventory_hostname }} node-role.kubernetes.io/control-plane:NoSchedule --overwrite
-  environment:
-    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-  register: taint_result
-  changed_when: "'not tainted' not in taint_result.stdout"

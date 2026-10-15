@@ -1,10 +1,98 @@
 ---
-- import_tasks: update.yml
-- import_tasks: hosts.yml
-- import_tasks: dependencies.yml
-- import_tasks: ntp.yml
-- import_tasks: fail2ban.yml
-- import_tasks: sshd.yml
-- import_tasks: swap.yml
-- import_tasks: unattended_upgrades.yml
+# 1. Hostname & /etc/hosts
+- name: Set hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
 
+- name: Add hostname to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\b'
+    line: "127.0.1.1 {{ inventory_hostname }} {{ inventory_hostname.split('.')[0] }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+# 2. Base Packages & Time Sync
+- name: Install system dependencies (Common)
+  apt:
+    name:
+      - bash
+      - sudo
+      - python3
+      - curl
+      - gnupg
+      - ca-certificates
+      - iptables
+      - htop
+      - systemd-timesyncd
+      - fail2ban
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+    update_cache: true
+
+- name: Enable NTP (systemd-timesyncd)
+  service:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+
+# 3. Security (Fail2Ban & SSH Hardening)
+- name: Configure Fail2Ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+  notify: Restart Fail2Ban
+
+- name: Ensure Fail2Ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: true
+
+- name: Harden SSH configuration
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart SSH
+
+# 4. Unattended Upgrades
+- name: Configure unattended-upgrades auto-update
+  copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: '0644'
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+
+- name: Configure unattended-upgrades policy
+  copy:
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: '0644'
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+          "${distro_id}:${distro_codename}";
+          "${distro_id}:${distro_codename}-security";
+          "${distro_id}ESMApps:${distro_codename}-apps-security";
+          "${distro_id}ESM:${distro_codename}-infra-security";
+          "origin=*";
+      };
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+- name: Enable unattended-upgrades service
+  service:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+
+# 5. Swap Configuration
+- import_tasks: swap.yml
