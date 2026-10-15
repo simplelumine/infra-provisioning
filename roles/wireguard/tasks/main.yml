@@ -86,24 +86,6 @@
     wg_private_key: "{{ wg_privkey_raw.content | b64decode | trim }}"
     wg_public_key: "{{ wg_pubkey_raw.content | b64decode | trim }}"
 
-- name: Fetch WireGuard public keys from peers outside --limit batch
-  slurp:
-    src: /etc/wireguard/public.key
-  delegate_to: "{{ item }}"
-  register: missing_peer_pubkeys
-  loop: "{{ groups[wireguard_peer_group] | default([]) | difference(ansible_play_hosts) }}"
-  run_once: true
-  failed_when: false
-
-- name: Cache WireGuard public keys for peers outside --limit batch
-  set_fact:
-    wg_public_key: "{{ item.content | b64decode | trim }}"
-  delegate_to: "{{ item.item }}"
-  delegate_facts: true
-  loop: "{{ missing_peer_pubkeys.results | default([]) }}"
-  run_once: true
-  when: item.content is defined
-
 - name: Render WireGuard interface configuration
   template:
     src: wg0.conf.j2
@@ -111,7 +93,7 @@
     owner: root
     group: root
     mode: '0600'
-  notify: Restart WireGuard
+  notify: Reload WireGuard
 
 - name: Flush handlers to apply WireGuard config immediately
   meta: flush_handlers

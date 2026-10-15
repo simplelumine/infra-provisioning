@@ -1,6 +1,10 @@
 ---
-- name: Restart WireGuard
-  systemd:
-    name: "wg-quick@{{ wireguard_interface }}"
-    state: restarted
-    daemon_reload: true
+- name: Reload WireGuard
+  shell: |
+    if ip link show {{ wireguard_interface }} >/dev/null 2>&1; then
+      wg syncconf {{ wireguard_interface }} <(wg-quick strip {{ wireguard_interface }})
+    else
+      systemctl restart wg-quick@{{ wireguard_interface }}
+    fi
+  args:
+    executable: /bin/bash
