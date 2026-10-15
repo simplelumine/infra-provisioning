@@ -11,18 +11,6 @@
     state: latest
     update_cache: true
 
-- name: Enable IPv4 and IPv6 forwarding for Tailscale
-  sysctl:
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-    sysctl_file: /etc/sysctl.d/99-tailscale.conf
-    sysctl_set: true
-    state: present
-    reload: true
-  loop:
-    - { name: "net.ipv4.ip_forward", value: "1" }
-    - { name: "net.ipv6.conf.all.forwarding", value: "1" }
-
 - name: Ensure Tailscale service is running
   service:
     name: tailscaled

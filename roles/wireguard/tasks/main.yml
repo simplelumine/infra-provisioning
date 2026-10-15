@@ -22,7 +22,7 @@
     content: "wireguard\n"
     mode: '0644'
 
-- name: Enable IPv4 and IPv6 forwarding
+- name: Configure universal IPv6 (enable IPv6, keep RA route with accept_ra=2) and packet forwarding
   sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
@@ -31,8 +31,27 @@
     state: present
     reload: true
   loop:
+    - { name: "net.ipv6.conf.all.disable_ipv6", value: "0" }
+    - { name: "net.ipv6.conf.default.disable_ipv6", value: "0" }
+    - { name: "net.ipv6.conf.{{ ansible_default_ipv4.interface | default('eth0') }}.disable_ipv6", value: "0" }
+    - { name: "net.ipv6.conf.all.accept_ra", value: "2" }
+    - { name: "net.ipv6.conf.default.accept_ra", value: "2" }
+    - { name: "net.ipv6.conf.{{ ansible_default_ipv4.interface | default('eth0') }}.accept_ra", value: "2" }
     - { name: "net.ipv4.ip_forward", value: "1" }
     - { name: "net.ipv6.conf.all.forwarding", value: "1" }
+
+- name: Check if IPv6 default route exists
+  command: ip -6 route show default
+  register: ipv6_default_route
+  changed_when: false
+  failed_when: false
+
+- name: Recover IPv6 RA default route if missing (safe soft toggle without dropping interface)
+  shell: |
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    sleep 3
+    sysctl -w net.ipv6.conf.all.forwarding=1
+  when: ipv6_default_route.stdout | default('') | trim | length == 0
 
 - name: Ensure /etc/wireguard directory exists
   file:

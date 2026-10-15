@@ -5,15 +5,17 @@ ListenPort = {{ wireguard_port }}
 PrivateKey = {{ wg_private_key }}
 MTU = {{ wireguard_mtu }}
 
+{% set self_is_ipv6 = ':' in (wg_endpoint | default('') | string) %}
 {% for peer in groups[wireguard_peer_group] | default([]) %}
 {% if peer != inventory_hostname and hostvars[peer]['wg_public_key'] is defined and hostvars[peer]['wg_ip'] is defined %}
 {% set peer_endpoint = hostvars[peer]['wg_endpoint'] | default(hostvars[peer]['ansible_host']) %}
+{% set peer_is_ipv6 = ':' in (peer_endpoint | default('') | string) %}
 # Peer: {{ peer }}
 [Peer]
 PublicKey = {{ hostvars[peer]['wg_public_key'] }}
 AllowedIPs = {{ hostvars[peer]['wg_ip'] }}/32
-{% if peer_endpoint is defined and peer_endpoint | string | length > 0 %}
-Endpoint = {{ '[' ~ peer_endpoint ~ ']' if ':' in (peer_endpoint | string) else peer_endpoint }}:{{ hostvars[peer]['wireguard_port'] | default(wireguard_port) }}
+{% if peer_endpoint is defined and peer_endpoint | string | length > 0 and (not self_is_ipv6 or peer_is_ipv6) %}
+Endpoint = {{ '[' ~ peer_endpoint ~ ']' if peer_is_ipv6 else peer_endpoint }}:{{ hostvars[peer]['wireguard_port'] | default(wireguard_port) }}
 {% endif %}
 PersistentKeepalive = {{ wireguard_persistent_keepalive }}
 
