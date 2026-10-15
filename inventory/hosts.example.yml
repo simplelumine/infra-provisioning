@@ -28,7 +28,7 @@ all:
       hosts:
         lax-eg-01:
           ansible_host: 203.0.113.10
-          wg_ip: 10.100.1.1
+          wg_ip: 10.10.2.1
           tailscale_enable_peer_relay: true
           tailscale_derp_hostname: "lax-relay.example.com"
           traefik_sites:
@@ -50,7 +50,7 @@ all:
           # Cloud provider default user (e.g. GCP auto-creates user with passwordless sudo)
           ansible_user: simplelumine
           # Internal Kernel WireGuard IP (stays constant across IPv4 -> IPv6 transition)
-          wg_ip: 10.100.0.1
+          wg_ip: 10.10.0.1
           # Optional: Use IPv6 directly for WireGuard underlay from Day 1
           # wg_endpoint: "2600:1900:4000:xxxx::1"
 
@@ -58,11 +58,11 @@ all:
       hosts:
         sjc-wk-01:
           ansible_host: 198.51.100.21
-          wg_ip: 10.100.0.11
+          wg_ip: 10.10.1.1
           # wg_endpoint: "2604:a880:400:d0::xxxx"
         lax-wk-01:
           ansible_host: 198.51.100.22
-          wg_ip: 10.100.0.12
+          wg_ip: 10.10.1.2
           # wg_endpoint: "2604:a880:400:d0::yyyy"
 
     # ==========================================================
