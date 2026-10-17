@@ -1,0 +1,41 @@
+{% set raw_clients = xray_clients + (xray_host_clients | default([])) %}
+{% set allowed_clients = [] %}
+{% for client in raw_clients %}
+{%   set client_hosts = client.hosts | default([]) %}
+{%   if (client_hosts | length == 0)
+        or ('all' in client_hosts)
+        or (inventory_hostname in client_hosts)
+        or ((client_hosts | intersect(group_names)) | length > 0) %}
+{%     set _ = allowed_clients.append(client) %}
+{%   endif %}
+{% endfor %}
+{
+  "node": "{{ inventory_hostname }}",
+  "api_server": "{{ xray_api_listen | default('127.0.0.1:10085') }}",
+  "inbound_tag": "{{ xray_inbound_tag | default('vless-in') }}",
+  "xray_bin": "/usr/local/bin/xray",
+  "xray_config": "/usr/local/etc/xray/config.json",
+  "state_file": "{{ xray_accounting_state_file | default('/var/lib/xray/usage.json') }}",
+  "prom_file": "{{ xray_textfile_collector_dir | default('/var/lib/node_exporter/textfile_collector') }}/xray_traffic.prom",
+  "billing_day": {{ xray_billing_day | default(1) | int }},
+  "traffic_multiplier": {{ xray_traffic_multiplier | default(2) }},
+  "users": {
+    {% for client in allowed_clients if client.email is defined and client.email != "" %}
+    {% set q_map = client.quotas | default({}) %}
+    {% set ns = namespace(quota = client.quota_gb | default(0)) %}
+    {% for grp in group_names %}
+    {%   if grp in q_map %}
+    {%     set ns.quota = q_map[grp] %}
+    {%   endif %}
+    {% endfor %}
+    {% if inventory_hostname in q_map %}
+    {%   set ns.quota = q_map[inventory_hostname] %}
+    {% endif %}
+    "{{ client.email }}": {
+      "id": "{{ client.id }}",
+      "level": {{ client.level | default(0) }},
+      "quota": {{ ns.quota | to_json }}
+    }{{ "," if not loop.last else "" }}
+    {% endfor %}
+  }
+}

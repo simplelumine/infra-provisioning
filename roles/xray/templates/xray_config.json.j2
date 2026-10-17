@@ -1,19 +1,66 @@
+{% set raw_clients = xray_clients + (xray_host_clients | default([])) %}
+{% set allowed_clients = [] %}
+{% for client in raw_clients %}
+{%   set client_hosts = client.hosts | default([]) %}
+{%   if (client_hosts | length == 0)
+        or ('all' in client_hosts)
+        or (inventory_hostname in client_hosts)
+        or ((client_hosts | intersect(group_names)) | length > 0) %}
+{%     set _ = allowed_clients.append(client) %}
+{%   endif %}
+{% endfor %}
+{% set levels = ['0'] %}
+{% for client in allowed_clients %}
+{%   set lvl = (client.level | default(0)) | string %}
+{%   if lvl not in levels %}
+{%     set _ = levels.append(lvl) %}
+{%   endif %}
+{% endfor %}
 {
   "log": {
     "loglevel": "warning"
   },
+  {% if xray_enable_stats | default(true) | bool %}
+  "stats": {},
+  "api": {
+    "tag": "api",
+    "listen": "{{ xray_api_listen | default('127.0.0.1:10085') }}",
+    "services": [
+      "HandlerService",
+      "StatsService"
+    ]
+  },
+  "policy": {
+    "levels": {
+      {% for lvl in levels %}
+      "{{ lvl }}": {
+        "statsUserUplink": true,
+        "statsUserDownlink": true,
+        "statsUserOnline": true
+      }{{ "," if not loop.last else "" }}
+      {% endfor %}
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true,
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  },
+  {% endif %}
   "inbounds": [
     {
+      "tag": "{{ xray_inbound_tag | default('vless-in') }}",
       "listen": "0.0.0.0",
       "port": {{ xray_port_tcp }},
       "protocol": "vless",
       "settings": {
         "clients": [
-          {% set all_clients = xray_clients + (xray_host_clients | default([])) %}
-          {% for client in all_clients %}
+          {% for client in allowed_clients %}
           {
             "id": "{{ client.id }}",
-            "flow": "xtls-rprx-vision"{% if client.email is defined and client.email != "" %},
+            "flow": "xtls-rprx-vision",
+            "level": {{ client.level | default(0) }}{% if client.email is defined and client.email != "" %},
             "email": "{{ client.email }}"{% endif %}
           }{{ "," if not loop.last else "" }}
           {% endfor %}

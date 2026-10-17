@@ -1,9 +1,14 @@
 ---
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
 - name: Restart Xray
   service:
     name: xray
     state: restarted
 
-- name: Reload systemd
-  systemd:
-    daemon_reload: true
+- name: Run Xray accounting
+  command: /usr/local/bin/xray-accounting.py --wait-api
+  changed_when: false
+  when: xray_enable_accounting | default(true) | bool

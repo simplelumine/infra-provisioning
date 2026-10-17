@@ -1,9 +1,14 @@
 ---
-- name: Create Xray directory
+- name: Create Xray directories
   file:
-    path: /usr/local/etc/xray
+    path: "{{ item }}"
     state: directory
     mode: '0755'
+  loop:
+    - /usr/local/etc/xray
+    - /var/lib/xray
+    - /etc/systemd/system/xray.service.d
+    - "{{ xray_textfile_collector_dir | default('/var/lib/node_exporter/textfile_collector') }}"
 
 - name: Install Xray (first time)
   shell: |
@@ -51,6 +56,65 @@
       WantedBy=timers.target
   notify: Reload systemd
 
+- name: Deploy Xray traffic accounting script
+  copy:
+    src: xray-accounting.py
+    dest: /usr/local/bin/xray-accounting.py
+    mode: '0755'
+  when: xray_enable_accounting | default(true) | bool
+  notify: Run Xray accounting
+
+- name: Render Xray accounting configuration
+  template:
+    src: xray_accounting.json.j2
+    dest: /usr/local/etc/xray/accounting.json
+    mode: '0644'
+  when: xray_enable_accounting | default(true) | bool
+  notify: Run Xray accounting
+
+- name: Deploy Xray service drop-in for immediate post-start quota enforcement
+  copy:
+    dest: /etc/systemd/system/xray.service.d/accounting.conf
+    mode: '0644'
+    content: |
+      [Service]
+      ExecStartPost=-/usr/local/bin/xray-accounting.py --wait-api
+  when: xray_enable_accounting | default(true) | bool
+  notify: Reload systemd
+
+- name: Deploy Xray accounting systemd service
+  copy:
+    dest: /etc/systemd/system/xray-accounting.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Xray Traffic Accounting and Quota Enforcement
+      After=xray.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/xray-accounting.py
+  when: xray_enable_accounting | default(true) | bool
+  notify: Reload systemd
+
+- name: Deploy Xray accounting systemd timer
+  copy:
+    dest: /etc/systemd/system/xray-accounting.timer
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Run Xray Traffic Accounting Every Minute
+
+      [Timer]
+      OnCalendar=*:0/1
+      AccuracySec=5s
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+  when: xray_enable_accounting | default(true) | bool
+  notify: Reload systemd
+
 - name: Render Xray configuration
   template:
     src: xray_config.json.j2
@@ -73,3 +137,10 @@
     name: xray-update.timer
     state: started
     enabled: true
+
+- name: Enable Xray accounting timer
+  service:
+    name: xray-accounting.timer
+    state: started
+    enabled: true
+  when: xray_enable_accounting | default(true) | bool

@@ -1,5 +1,6 @@
 ---
 xray_port_tcp: 8443
+xray_inbound_tag: "vless-in"
 xray_clients: []
 xray_host_clients: []  # Per-host clients (optional, merged with global)
 xray_private_key: ""
@@ -11,3 +12,12 @@ xray_short_ids: []
 
 # Traffic Sniffing
 xray_enable_sniffing: true
+
+# Stats, API & Traffic Accounting
+xray_enable_stats: true
+xray_enable_accounting: true
+xray_api_listen: "127.0.0.1:10085"
+xray_billing_day: 1
+xray_traffic_multiplier: 2
+xray_accounting_state_file: "/var/lib/xray/usage.json"
+xray_textfile_collector_dir: "/var/lib/node_exporter/textfile_collector"

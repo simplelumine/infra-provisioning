@@ -15,10 +15,21 @@ all:
     xray_reality_dest: "www.example.com:443"
     xray_reality_server_names:
       - "www.example.com"
+    # Centralized Xray User Registry (Identity, Node Whitelist & Traffic Quotas)
+    # - hosts: optional list of hostnames or group names (e.g. "edge", "lax-wk-01").
+    #          Omit or set ["all"] to allow access on all Xray nodes.
+    # - quotas: optional map of <hostname_or_group>: <quota> (supports numbers in GB like 400, or strings like "20MB", "500GB").
+    #          Bidirectional x2 multiplier is applied automatically. Omit or set 0 for unlimited traffic.
     xray_clients:
       - id: "00000000-0000-0000-0000-000000000000"
         email: "admin"
         level: 0
+      - id: "11111111-1111-1111-1111-111111111111"
+        email: "partner"
+        hosts:
+          - lax-eg-01
+        quotas:
+          lax-eg-01: 400
 
   children:
     # ==========================================================
@@ -32,6 +43,7 @@ all:
           tailscale_enable_peer_relay: true
           tailscale_derp_enabled: true
           tailscale_derp_hostname: "lax-relay.example.com"
+          xray_billing_day: 1
           traefik_sites:
             - domain: "app.example.com"
               upstream: "http://100.64.0.10:8080"
