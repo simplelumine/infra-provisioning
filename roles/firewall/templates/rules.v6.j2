@@ -36,6 +36,11 @@
 -A ANSIBLE-FW6 -p tcp -m tcp --dport {{ xray_port_tcp }} -j ACCEPT
 {% endif %}
 
+{% if 'worker_nodes' in group_names %}
+# Genshin Impact KCP GateServer UDP port
+-A ANSIBLE-FW6 -p udp -m udp --dport 21081 -j ACCEPT
+{% endif %}
+
 {% if 'tailscale' in group_names %}
 -A ANSIBLE-FW6 -i tailscale0 -j ACCEPT
 -A ANSIBLE-FW6 -p udp -m udp --dport {{ tailscale_peer_relay_port | default(41641) }} -j ACCEPT
