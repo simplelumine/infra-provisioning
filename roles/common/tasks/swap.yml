@@ -12,6 +12,7 @@
           {%- else -%}
           {{ ansible_memtotal_mb }}
           {%- endif -%}
+      when: swap_size_mb is not defined
       tags: swap
 
     - name: Display calculated Swap Size
@@ -75,15 +76,15 @@
         mode: '0600'
       tags: swap
 
-    - name: Format swap file
-      command: mkswap {{ swap_file_path }}
-      when: not swap_file_check.stat.exists
-      tags: swap
-
     - name: Check if swap is active
       command: swapon -s
       register: swapon_status
       changed_when: false
+      tags: swap
+
+    - name: Format swap file
+      command: mkswap {{ swap_file_path }}
+      when: swap_file_path not in swapon_status.stdout
       tags: swap
 
     - name: Enable swap file
@@ -105,7 +106,9 @@
     - name: Set vm.swappiness
       sysctl:
         name: vm.swappiness
-        value: '60'
+        value: "{{ swap_swappiness | default(40) | string }}"
+        sysctl_file: /etc/sysctl.d/99-swap.conf
+        sysctl_set: true
         state: present
         reload: true
       tags: swap

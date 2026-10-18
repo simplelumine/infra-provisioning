@@ -1,3 +1,4 @@
 ---
 system_swap_enabled: true
 swap_file_path: /swapfile
+swap_swappiness: "{{ 40 if 'cluster' in group_names else 60 }}"
