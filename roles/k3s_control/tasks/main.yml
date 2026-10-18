@@ -40,6 +40,24 @@
         --server https://{{ hostvars[k3s_leader_host]['wg_ip'] }}:6443 --token {{ k3s_token }}
       {%- endif -%}
 
+- name: Ensure /etc/rancher/k3s directory exists
+  file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Deploy Kubelet Swap Configuration (LimitedSwap)
+  copy:
+    dest: /etc/rancher/k3s/kubelet-config.yaml
+    mode: '0644'
+    content: |
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      failSwapOn: false
+      memorySwap:
+        swapBehavior: LimitedSwap
+  register: kubelet_swap_config
+
 - name: Install/Upgrade K3s Server (bound to Kernel WireGuard interface)
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - server \
@@ -49,7 +67,7 @@
     --flannel-iface {{ wireguard_interface | default('wg0') }} \
     --node-taint node-role.kubernetes.io/control-plane:NoSchedule \
     --disable=traefik \
-    --kubelet-arg="fail-swap-on=false" \
+    --kubelet-arg="config=/etc/rancher/k3s/kubelet-config.yaml" \
     --tls-san {{ wg_ip }} \
     --tls-san {{ ansible_host }} \
     --tls-san {{ inventory_hostname }}{% if tailscale_ip_output.stdout | default('') | trim %} \
@@ -57,6 +75,7 @@
   when: >
     k3s_current_version.rc != 0 or
     k3s_install_version not in k3s_current_version.stdout or
+    kubelet_swap_config.changed or
     k3s_force_reinstall | default(false) | bool
 
 - name: Retrieve K3s Kubeconfig (Leader Only)

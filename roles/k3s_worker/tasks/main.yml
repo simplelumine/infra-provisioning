@@ -23,6 +23,24 @@
   register: k3s_token_slurp
   become: true
 
+- name: Ensure /etc/rancher/k3s directory exists
+  file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Deploy Kubelet Swap Configuration (LimitedSwap)
+  copy:
+    dest: /etc/rancher/k3s/kubelet-config.yaml
+    mode: '0644'
+    content: |
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      failSwapOn: false
+      memorySwap:
+        swapBehavior: LimitedSwap
+  register: kubelet_swap_config
+
 - name: Install/Upgrade K3s Agent (bound to Kernel WireGuard interface)
   shell: |
     curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_install_version }} sh -s - agent \
@@ -31,12 +49,14 @@
     --node-ip {{ wg_ip }} \
     --node-external-ip {{ ansible_host }} \
     --flannel-iface {{ wireguard_interface | default('wg0') }} \
-    --kubelet-arg="fail-swap-on=false"
+    --kubelet-arg="config=/etc/rancher/k3s/kubelet-config.yaml"
   when: >
     k3s_current_version.rc != 0 or
     k3s_install_version not in k3s_current_version.stdout or
     ('--node-ip ' ~ wg_ip) not in (k3s_agent_service.stdout | default('')) or
     ('--node-external-ip ' ~ (ansible_host | string)) not in (k3s_agent_service.stdout | default('')) or
+    'kubelet-config.yaml' not in (k3s_agent_service.stdout | default('')) or
+    kubelet_swap_config.changed or
     k3s_force_reinstall | default(false) | bool
 
 - name: Ensure K3s Agent service is enabled and running
