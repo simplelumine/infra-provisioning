@@ -78,7 +78,7 @@
     mode: '0644'
     content: |
       [Service]
-      ExecStartPost=-/usr/local/bin/xray-accounting.py --wait-api
+      ExecStartPost=+-/usr/local/bin/xray-accounting.py --wait-api
   when: xray_enable_accounting | default(true) | bool
   notify: Reload systemd
 
@@ -120,7 +120,7 @@
     src: xray_config.json.j2
     dest: /usr/local/etc/xray/config.json
     mode: '0644'
-    validate: '/usr/local/bin/xray -test -format json -config %s'
+    validate: '/bin/sh -c "/usr/local/bin/xray run -test -config stdin: < %s"'
   notify: Restart Xray
 
 - name: Force immediate handler execution
