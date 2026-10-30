@@ -76,7 +76,7 @@
     --node-ip {{ wg_ip }} \
     --advertise-address {{ wg_ip }} \
     --flannel-iface {{ wireguard_interface | default('wg0') }} \
-    --node-taint node-role.kubernetes.io/control-plane:NoSchedule \
+    --node-taint node-role.kubernetes.io/control-plane:NoExecute \
     --disable=traefik \
     --disable-helm-controller \
     --kubelet-arg="config=/etc/rancher/k3s/kubelet-config.yaml" \
