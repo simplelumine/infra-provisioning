@@ -62,6 +62,7 @@
       failSwapOn: false
       memorySwap:
         swapBehavior: LimitedSwap
+      nodeStatusUpdateFrequency: 60s
   register: kubelet_swap_config
 
 - name: Install/Upgrade K3s Server (bound to Kernel WireGuard interface)
@@ -77,6 +78,7 @@
     --flannel-iface {{ wireguard_interface | default('wg0') }} \
     --node-taint node-role.kubernetes.io/control-plane:NoSchedule \
     --disable=traefik \
+    --disable-helm-controller \
     --kubelet-arg="config=/etc/rancher/k3s/kubelet-config.yaml" \
     --tls-san {{ wg_ip }} \
     --tls-san {{ ansible_host }} \

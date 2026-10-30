@@ -39,6 +39,7 @@
       failSwapOn: false
       memorySwap:
         swapBehavior: LimitedSwap
+      nodeStatusUpdateFrequency: 60s
   register: kubelet_swap_config
 
 - name: Install/Upgrade K3s Agent (bound to Kernel WireGuard interface)
