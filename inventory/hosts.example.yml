@@ -5,6 +5,10 @@ all:
     ansible_user: root
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
+    # --- System Maintenance & Rolling Reboot Settings ---
+    system_upgrade_packages: true
+    system_allow_reboot: false
+
     # --- Global Traefik Settings ---
     traefik_acme_email: "admin@example.com"
 

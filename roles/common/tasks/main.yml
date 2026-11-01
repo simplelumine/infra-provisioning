@@ -118,5 +118,18 @@
     state: started
     enabled: true
 
+- name: Upgrade Linux kernel and system security packages
+  apt:
+    upgrade: dist
+    update_cache: true
+    autoremove: true
+    autoclean: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  when: system_upgrade_packages | default(true) | bool
+  tags:
+    - common
+    - upgrade
+
 # 5. Swap Configuration
 - import_tasks: swap.yml

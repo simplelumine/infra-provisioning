@@ -65,11 +65,33 @@
       nodeStatusUpdateFrequency: 60s
   register: kubelet_swap_config
 
+- name: Download K3s binary on controller for pure-IPv6 control plane nodes (GitHub is IPv4-only)
+  delegate_to: localhost
+  become: false
+  get_url:
+    url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_install_version | urlencode }}/{{ (ansible_architecture == 'aarch64') | ternary('k3s-arm64', 'k3s') }}"
+    dest: "/tmp/k3s-{{ k3s_install_version }}-{{ ansible_architecture }}"
+    mode: '0755'
+  when:
+    - "':' in (wg_endpoint | default(''))"
+    - k3s_current_version.rc != 0 or (k3s_install_version not in k3s_current_version.stdout) or (k3s_force_reinstall | default(false) | bool)
+
+- name: Upload K3s binary to pure-IPv6 control plane node
+  copy:
+    src: "/tmp/k3s-{{ k3s_install_version }}-{{ ansible_architecture }}"
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: '0755'
+  when:
+    - "':' in (wg_endpoint | default(''))"
+    - k3s_current_version.rc != 0 or (k3s_install_version not in k3s_current_version.stdout) or (k3s_force_reinstall | default(false) | bool)
+
 - name: Install/Upgrade K3s Server (bound to Kernel WireGuard interface)
   shell: |
     curl -sfL https://get.k3s.io | \
     INSTALL_K3S_VERSION={{ k3s_install_version }} \
-    INSTALL_K3S_SKIP_DOWNLOAD={{ (k3s_current_version.rc == 0 and k3s_install_version in k3s_current_version.stdout) | ternary('true', 'false') }} \
+    INSTALL_K3S_SKIP_DOWNLOAD={{ ((k3s_current_version.rc == 0 and k3s_install_version in k3s_current_version.stdout) or (':' in (wg_endpoint | default('')))) | ternary('true', 'false') }} \
     INSTALL_K3S_FORCE_RESTART={{ kubelet_swap_config.changed | ternary('true', 'false') }} \
     sh -s - server \
     {{ k3s_mode_args }} \

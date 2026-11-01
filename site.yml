@@ -66,3 +66,91 @@
   roles:
     - role: k3s_worker
       tags: k3s_worker
+
+- name: Rolling Reboot for Kernel & System Updates
+  hosts: edge:control_plane:worker_nodes
+  serial: 1
+  become: true
+  gather_facts: false
+  tags:
+    - common
+    - upgrade
+    - reboot
+  tasks:
+    - name: Check if reboot is required (flag file or newer kernel installed)
+      shell: |
+        RUNNING_KERNEL=$(uname -r)
+        LATEST_KERNEL=$(ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's|/boot/vmlinuz-||' | sort -V | tail -n 1)
+        if [ -f /var/run/reboot-required ] || { [ -n "$LATEST_KERNEL" ] && [ "$RUNNING_KERNEL" != "$LATEST_KERNEL" ]; }; then
+          echo "REBOOT_NEEDED: running=${RUNNING_KERNEL}, latest=${LATEST_KERNEL}"
+        else
+          echo "UP_TO_DATE: running=${RUNNING_KERNEL}"
+        fi
+      register: reboot_check
+      changed_when: false
+      when: system_allow_reboot | default(false) | bool
+
+    - name: Reboot node and wait for system to come back online
+      reboot:
+        msg: "Rolling reboot triggered by Ansible for kernel upgrade"
+        connect_timeout: 10
+        reboot_timeout: 300
+        pre_reboot_delay: 2
+        post_reboot_delay: 10
+        test_command: uname -r
+      when:
+        - system_allow_reboot | default(false) | bool
+        - "'REBOOT_NEEDED' in (reboot_check.stdout | default(''))"
+      register: node_rebooted
+
+    - name: Wait for WireGuard interface to be up after reboot
+      command: ip link show {{ wireguard_interface | default('wg0') }}
+      register: wg_status
+      until: wg_status.rc == 0
+      retries: 20
+      delay: 3
+      changed_when: false
+      when:
+        - node_rebooted is defined
+        - node_rebooted.changed | default(false)
+        - inventory_hostname in groups['wireguard']
+
+    - name: Wait for K3s Control Plane API Server (/readyz) after reboot
+      command: kubectl get --raw /readyz
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: cp_readyz
+      until: cp_readyz.rc == 0
+      retries: 30
+      delay: 5
+      changed_when: false
+      when:
+        - node_rebooted is defined
+        - node_rebooted.changed | default(false)
+        - inventory_hostname in groups['control_plane']
+
+    - name: Wait for Kubernetes Node to report Ready status after reboot
+      command: >
+        kubectl get node {{ inventory_hostname }}
+        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+      delegate_to: "{{ k3s_leader_host }}"
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: k8s_node_ready
+      until: k8s_node_ready.stdout == "True"
+      retries: 36
+      delay: 5
+      changed_when: false
+      when:
+        - node_rebooted is defined
+        - node_rebooted.changed | default(false)
+        - inventory_hostname in groups['cluster']
+
+    - name: Stabilization delay for stateful workloads (Postgres/Redis replication sync)
+      pause:
+        seconds: 20
+        prompt: "Waiting 20s for pods and stateful replicas on {{ inventory_hostname }} to stabilize before proceeding to next node..."
+      when:
+        - node_rebooted is defined
+        - node_rebooted.changed | default(false)
+        - inventory_hostname in groups['worker_nodes']
