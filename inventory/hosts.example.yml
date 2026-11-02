@@ -91,7 +91,6 @@ all:
       vars:
         k3s_install_version: "v1.37.0+k3s1"
         k3s_etcd_mode: true
-        k3s_etcd_s3_secret: "k3s-etcd-s3-config"
         k3s_leader_host: "pdx-cp-01"
         xray_port_tcp: 8443
 
