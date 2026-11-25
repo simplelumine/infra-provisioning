@@ -61,25 +61,28 @@ all:
     control_plane:
       hosts:
         pdx-cp-01:
-          # Can use temporary IPv4 initially, then switch directly to IPv6 later
           ansible_host: 34.100.0.1
           # Cloud provider default user (e.g. GCP auto-creates user with passwordless sudo)
           ansible_user: simplelumine
-          # Internal Kernel WireGuard IP (stays constant across IPv4 -> IPv6 transition)
           wg_ip: 10.10.0.1
-          # Optional: Use IPv6 directly for WireGuard underlay from Day 1
-          # wg_endpoint: "2600:1900:4000:xxxx::1"
+          wg_endpoint: 34.100.0.1
+          # Optional: Same-VPC LAN IP so co-located cloud nodes peer directly over free LAN
+          # wg_lan_ip: 10.138.0.9
 
     worker_nodes:
       hosts:
         sjc-wk-01:
           ansible_host: 198.51.100.21
           wg_ip: 10.10.1.1
-          # wg_endpoint: "2604:a880:400:d0::xxxx"
         lax-wk-01:
           ansible_host: 198.51.100.22
           wg_ip: 10.10.1.2
-          # wg_endpoint: "2604:a880:400:d0::yyyy"
+        # pdx-wk-01:
+        #   ansible_host: 34.100.0.2
+        #   ansible_user: simplelumine
+        #   wg_ip: 10.10.1.6
+        #   wg_lan_ip: 10.138.0.10
+        #   swap_size_mb: 2048
 
     # ==========================================================
     # 2. Cluster Group (K3s Shared Vars)
@@ -89,7 +92,7 @@ all:
         control_plane:
         worker_nodes:
       vars:
-        k3s_install_version: "v1.37.0+k3s1"
+        k3s_install_version: "v1.37.2+k3s1"
         k3s_etcd_mode: true
         k3s_leader_host: "pdx-cp-01"
         xray_port_tcp: 8443
