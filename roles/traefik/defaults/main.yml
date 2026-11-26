@@ -1,5 +1,5 @@
 ---
-traefik_version: "3.3.4"
+traefik_version: "3.8.0"
 traefik_arch_map:
   x86_64: "amd64"
   aarch64: "arm64"

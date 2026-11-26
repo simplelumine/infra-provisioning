@@ -17,6 +17,9 @@ entryPoints:
           permanent: true
   websecure:
     address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: "0s"
 
 certificatesResolvers:
   letsencrypt:

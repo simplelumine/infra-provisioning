@@ -200,9 +200,7 @@ def write_prom_metrics(
     ]
 
     users_state = state.get("users", {})
-    all_emails = sorted(set(configured_users.keys()) | set(users_state.keys()))
-
-    for email in all_emails:
+    for email in sorted(configured_users.keys()):
         u_stat = users_state.get(email, {})
         u_cfg = configured_users.get(email, {})
         raw_quota = u_cfg.get("quota", u_cfg.get("quota_gb", 0))
@@ -271,6 +269,8 @@ def main() -> int:
         current_cycle = compute_billing_cycle(datetime.date.today(), billing_day)
         if state.get("billing_cycle") != current_cycle:
             state["billing_cycle"] = current_cycle
+            for stale_email in [e for e in state["users"] if e not in configured_users]:
+                del state["users"][stale_email]
             for u_stat in state["users"].values():
                 u_stat["cycle_up"] = 0
                 u_stat["cycle_down"] = 0

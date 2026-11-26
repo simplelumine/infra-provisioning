@@ -66,6 +66,8 @@
   roles:
     - role: k3s_worker
       tags: k3s_worker
+    - role: gvisor
+      tags: gvisor
 
 - name: Rolling Reboot for Kernel & System Updates
   hosts: edge:control_plane:worker_nodes

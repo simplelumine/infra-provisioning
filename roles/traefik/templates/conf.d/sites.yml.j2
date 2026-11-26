@@ -42,9 +42,11 @@ http:
         passHostHeader: {{ site.pass_host_header | lower }}
 {% endif %}
         servers:
-          - url: "{{ site.upstream }}"
+{% for url in (site.upstreams | default([site.upstream])) %}
+          - url: "{{ url }}"
+{% endfor %}
 {% if site.tls_insecure | default(false) %}
-        serversTransport: "insecureTransport"
+        serversTransport: "insecureTransport@file"
 {% endif %}
 {% endfor %}
 

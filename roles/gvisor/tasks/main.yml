@@ -1,0 +1,65 @@
+---
+- name: Install gVisor APT signing key
+  shell: |
+    set -eo pipefail
+    curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
+    chmod 0644 /usr/share/keyrings/gvisor-archive-keyring.gpg
+  args:
+    executable: /bin/bash
+    creates: /usr/share/keyrings/gvisor-archive-keyring.gpg
+
+- name: Configure gVisor APT repository
+  copy:
+    dest: /etc/apt/sources.list.d/gvisor.list
+    mode: '0644'
+    content: |
+      deb [arch={{ (ansible_architecture == 'aarch64') | ternary('arm64', 'amd64') }} signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main
+  register: gvisor_apt_repo
+
+- name: Check if runsc binary already exists before apt install
+  stat:
+    path: /usr/bin/runsc
+  register: runsc_bin_before
+
+- name: Install/Upgrade gVisor (runsc)
+  apt:
+    name: runsc
+    state: latest
+    update_cache: "{{ gvisor_apt_repo.changed }}"
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Ensure K3s containerd drop-in config directory exists
+  file:
+    path: /var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.d
+    state: directory
+    mode: '0755'
+
+- name: Register gVisor runtime handler in K3s containerd
+  copy:
+    dest: /var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.d/gvisor.toml
+    mode: '0644'
+    content: |
+      version = 3
+
+      [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.gvisor]
+        runtime_type = "io.containerd.runsc.v1"
+
+      [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.gvisor.options]
+        TypeUrl = "io.containerd.runsc.v1.options"
+        SystemdCgroup = true
+  register: gvisor_containerd_cfg
+
+- name: Restart K3s Agent to load gVisor runtime (non-blocking against 5m NodeStatus sync)
+  command: systemctl restart --no-block k3s-agent
+  when: (not runsc_bin_before.stat.exists) or gvisor_containerd_cfg.changed
+  register: k3s_agent_restarted
+
+- name: Wait for K3s containerd to register gVisor runtime
+  shell: k3s crictl info | grep -q '"gvisor"'
+  register: gvisor_crictl_check
+  until: gvisor_crictl_check.rc == 0
+  retries: 20
+  delay: 2
+  changed_when: false
+  when: k3s_agent_restarted.changed | default(false)
